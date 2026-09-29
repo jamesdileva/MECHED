@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/battlefield/battlefield.tscn" id="2_bf"]
 [ext_resource type="Script" path="res://scripts/core/game_camera.gd" id="3_cam"]
 [ext_resource type="Script" path="res://scripts/ui/debug_hud.gd" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/mechs/mech.tscn" id="5_mech"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat1"]
 sky_horizon_color = Color(0.66, 0.67, 0.71, 1)
@@ -28,8 +29,10 @@ shadow_enabled = true
 
 [node name="Battlefield" parent="." instance=ExtResource("2_bf")]
 
+[node name="Mech" parent="." instance=ExtResource("5_mech")]
+
 [node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(0, 8, 20)
+position = Vector3(0, 7, 18)
 script = ExtResource("3_cam")
 
 [node name="DebugHUD" type="CanvasLayer" parent="."]

@@ -4,10 +4,25 @@ extends RefCounted
 
 var failures: PackedStringArray = []
 var _context := ""
+var _owned_nodes: Array[Node] = []
 
 
 func _init() -> void:
 	_context = get_script().resource_path.get_file()
+
+
+## Tests register every manually created Node here — Nodes are not
+## reference-counted, and the runner calls cleanup() after each test method.
+func _add_cleanup(node: Node) -> void:
+	_owned_nodes.append(node)
+
+
+## Called by the runner after every test method.
+func cleanup() -> void:
+	for node in _owned_nodes:
+		if is_instance_valid(node):
+			node.free()
+	_owned_nodes.clear()
 
 
 func assert_true(condition: bool, what: String) -> void:

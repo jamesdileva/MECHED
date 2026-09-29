@@ -30,6 +30,8 @@ func _run_all() -> bool:
 		for method in _test_methods(instance):
 			total += 1
 			instance.call(method)
+			if instance.has_method("cleanup"):
+				instance.cleanup()
 			if instance.failures.is_empty():
 				print("  PASS %s.%s" % [path.get_file(), method])
 			else:

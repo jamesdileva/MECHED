@@ -5,6 +5,34 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-09-28 — S02 · Basic Mech Controller
+
+**Scope (planned):** per roadmap S02 — one playable mech. `mech.tscn` (CharacterBody3D) with a generic `MechMovementController` node whose kinematics are pure functions (acceleration toward an axis intent, gravity when airborne, jump impulse, movement-limit clamps) so the movement rules are unit-testable without stepping physics. Mech root reads input exclusively via `InputLayer` and feeds the controller `move_axis` / `want_jump` — the same interface an AI driver will use later (implementation-guide §6/§11). Basic facing (visual yaw toward movement), battlefield X bounds + locked side-plane Z, kill-plane respawn, F1 debug reset (implementation-guide §17; raw debug keys are intentionally outside the device-agnostic action contract). Camera3D follows the mech side-on. Debug HUD gains a mech state line. Tests: controller kinematics, clamps, respawn, scene structure.
+
+**Done:**
+
+- `scenes/mechs/mech.tscn` — CharacterBody3D with collision, visual rig (body + orange barrel marking facing), and `Movement` controller child.
+- `scripts/movement/mech_movement_controller.gd` — generic movement rules; `compute_velocity()` / `clamp_position()` are pure functions (accel/decel toward axis intent, gravity when airborne, jump impulse, X bounds ±27, Z locked to side plane). Stats are exported for future MechDefinition-driven data.
+- `scripts/mechs/mech.gd` — player driver: InputLayer → controller intent, move_and_slide, facing yaw lerp, kill-plane respawn (respawn point (0,3,0), kill plane y<-10). Respawn/kill-plane rules use battlefield-local `position` (Main never moves) — keeps rules tree-independent and testable, matching the MatchState direction.
+- `main.gd` — camera follows mech; F1 respawns the mech (debug tools use raw keys by design, outside the action contract).
+- Debug HUD shows mech pos/vel/floor state; camera start moved to frame the spawn.
+- Test harness upgraded: runner now calls `cleanup()` after each test method; test_base owns Node instances (Nodes are not RefCounted — the first run leaked 6 controller nodes and the exit warnings caught it).
+
+**Fixed during verification:**
+
+- Discovered that in headless `-s` script mode, nodes added to root during `_initialize` never enter the tree (is_inside_tree stays false) — so global_position-based rules can't be tested detached; resolved by making kill-plane/respawn rules battlefield-local.
+- Runner now frees Node instances owned by tests (leak warnings at exit eliminated).
+
+**Verification (roadmap S02 checklist):**
+
+- `--import` exit 0; `--quit` smoke run exit 0, no script errors.
+- Tests: **13/13 passed** — controller kinematics (accelerate, decelerate-to-stop, jump impulse, gravity while airborne, Z plane lock), battlefield clamps, kill-plane respawn, mech scene structure, plus all S01 tests still green.
+- Still manual (needs eyes/desktop): drive the mech with keyboard (A/D, Space, Shift) and gamepad (left stick / d-pad, A, X); confirm camera pans side-on, facing flips, crate/platforms collide, falling off is impossible due to clamps (kill plane verified by test; F1 resets).
+
+**Next:** S03 — Turn System.
+
+---
+
 ## 2026-09-28 — S01 · Godot Project Foundation
 
 **Scope (planned):** per roadmap S01 — Godot 4.x project at repo root; main + battlefield scenes (3D side-on per architecture.md); Camera3D; device-agnostic input action map bound to keyboard + gamepad (architecture.md §18); `InputLayer` autoload as the only input access path for gameplay; debug HUD showing engine status + raw action state; folder skeleton per architecture.md §17; automated tests runnable headless; GitHub Actions CI (headless import + tests + smoke run, Godot pinned 4.7.2-stable). Also: MIT license (user-approved this session).
