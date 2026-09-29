@@ -5,6 +5,37 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-09-28 — S01 · Godot Project Foundation
+
+**Scope (planned):** per roadmap S01 — Godot 4.x project at repo root; main + battlefield scenes (3D side-on per architecture.md); Camera3D; device-agnostic input action map bound to keyboard + gamepad (architecture.md §18); `InputLayer` autoload as the only input access path for gameplay; debug HUD showing engine status + raw action state; folder skeleton per architecture.md §17; automated tests runnable headless; GitHub Actions CI (headless import + tests + smoke run, Godot pinned 4.7.2-stable). Also: MIT license (user-approved this session).
+
+**Decision — test harness:** using a built-in zero-dependency runner (`tests/run_tests.gd`, `extends SceneTree`) instead of vendoring gdUnit4/GUT for S01. Rationale: CI stays dependency-free, S01 tests are structural (InputMap contract, scene graph). Revisit gdUnit4 when mocking / scene-runner tooling is actually needed; the switch will be recorded here.
+
+**Done:**
+
+- Godot 4.7.2 project at repo root (`project.godot`, `icon.svg`), renderer defaults, 1280×720.
+- Input action map per architecture.md §18 — all 10 actions bound to keyboard AND gamepad simultaneously (WASD/arrows/space/shift/enter/tab/E/esc + d-pad, left stick, right stick, A/X, LB/RB, LT/RT, Start); deadzone 0.25.
+- `scripts/input/input_layer.gd` — `InputLayer` autoload; the only input path gameplay code may use.
+- `scenes/main/main.tscn` — Main (Node3D) with WorldEnvironment + sun, battlefield instance, side-on Camera3D (`game_camera.gd`, static framing with optional follow target for later sprints), debug HUD (`debug_hud.gd`) showing engine version, FPS, camera position, and live action state.
+- `scenes/battlefield/battlefield.tscn` — ground + two platforms (StaticBody3D) and one falling crate (RigidBody3D) so physics is visibly alive.
+- Folder skeleton per architecture.md §17 (`scenes/`, `scripts/`, `data/`, `assets/`, `tests/` subfolders).
+- Test harness: `tests/run_tests.gd` runner + `test_base.gd` asserts + `test_input_actions.gd` (enforces the both-devices binding contract) + `test_scenes.gd` (scene structure).
+- CI: `.github/workflows/ci.yml` — headless import, tests, one-frame smoke run on ubuntu-latest with Godot 4.7.2-stable.
+- Fixed during verification: runner discovered `*_test.gd` while tests are named `test_*.gd` (prefix convention) — discovery filter corrected; RefCounted instances must not be `free()`d.
+
+**Verification (roadmap S01 checklist):**
+
+- `godot --headless --path . --import` → exit 0, no script errors.
+- `godot --headless --path . -s res://tests/run_tests.gd` → **6/6 tests passed** (action map exists; every action has keyboard + gamepad binding; deadzones configured; main scene assembled; battlefield ground solid; main-scene setting correct).
+- `godot --headless --path . --quit` → main scene loads, autoloads + one frame process cleanly, exit 0.
+- CI on GitHub Actions: green (checked after push).
+
+**Still manual (needs eyes on a desktop):** run the project from the editor/CLI and confirm the sandbox window renders, the debug HUD updates when pressing keyboard keys and a gamepad stick/buttons. Everything else is automated.
+
+**Next:** S02 — Basic Mech Controller.
+
+---
+
 ## 2026-09-28 — S00 · Repository & Documentation Foundation
 
 **Scope (planned):** set up repo + docs, adopt the sprint workflow, add the controller-support plan. No game code yet.

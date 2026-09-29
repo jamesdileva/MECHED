@@ -1,0 +1,69 @@
+[gd_scene load_steps=10 format=3]
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.32, 0.48, 0.26, 1)
+
+[sub_resource type="BoxMesh" id="mesh_ground"]
+material = SubResource("mat_ground")
+size = Vector3(60, 1, 12)
+
+[sub_resource type="BoxShape3D" id="shape_ground"]
+size = Vector3(60, 1, 12)
+
+[sub_resource type="StandardMaterial3D" id="mat_platform"]
+albedo_color = Color(0.55, 0.42, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="mesh_platform"]
+material = SubResource("mat_platform")
+size = Vector3(10, 1, 6)
+
+[sub_resource type="BoxShape3D" id="shape_platform"]
+size = Vector3(10, 1, 6)
+
+[sub_resource type="StandardMaterial3D" id="mat_crate"]
+albedo_color = Color(0.6, 0.62, 0.66, 1)
+
+[sub_resource type="BoxMesh" id="mesh_crate"]
+material = SubResource("mat_crate")
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="shape_crate"]
+size = Vector3(1, 1, 1)
+
+[node name="Battlefield" type="Node3D"]
+
+[node name="Ground" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("mesh_ground")
+
+[node name="Collision" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("shape_ground")
+
+[node name="PlatformA" type="StaticBody3D" parent="."]
+position = Vector3(-12, 2.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="PlatformA"]
+mesh = SubResource("mesh_platform")
+
+[node name="Collision" type="CollisionShape3D" parent="PlatformA"]
+shape = SubResource("shape_platform")
+
+[node name="PlatformB" type="StaticBody3D" parent="."]
+position = Vector3(12, 4.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="PlatformB"]
+mesh = SubResource("mesh_platform")
+
+[node name="Collision" type="CollisionShape3D" parent="PlatformB"]
+shape = SubResource("shape_platform")
+
+[node name="Crate" type="RigidBody3D" parent="."]
+position = Vector3(0, 8, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Crate"]
+mesh = SubResource("mesh_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Crate"]
+shape = SubResource("shape_crate")

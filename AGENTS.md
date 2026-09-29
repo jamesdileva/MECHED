@@ -33,7 +33,7 @@ Never start the next sprint before the current one is verified and logged.
 - Simulation is separate from presentation; `MatchState` is the source of truth.
 - AI uses the same action system as players — no cheating.
 - Input is device-agnostic: gameplay reads named actions only, and keyboard + gamepad bindings are always added together (architecture.md §18).
-- Tests are written with the system, not in a later pass: **gdUnit4** (preferred) or GUT from S01 onward, runnable headless.
+- Tests are written with the system, not in a later pass. S01 ships a zero-dependency headless runner (`tests/run_tests.gd`); migrate to gdUnit4/GUT only when mocking / scene-runner tooling is genuinely needed, and record the switch in `worklog.md`.
 - Keep the project always runnable: after every change, a headless import/check must pass without script errors (see Commands).
 - Never commit generated files (`.godot/`) or export credentials.
 
@@ -45,11 +45,17 @@ Godot 4.7.2-stable is installed via **winget** (package `GodotEngine.GodotEngine
 # version check
 "$LOCALAPPDATA/Microsoft/WinGet/Links/godot.cmd" --version
 
-# headless import / script-error check (must exit clean after every change)
-"$LOCALAPPDATA/Microsoft/WinGet/Links/godot.cmd" --headless --path . --import --quit
+# import (must exit clean after adding assets/scenes)
+"$LOCALAPPDATA/Microsoft/WinGet/Links/godot.cmd" --headless --path . --import
+
+# run the test suite (must pass after every change)
+"$LOCALAPPDATA/Microsoft/WinGet/Links/godot.cmd" --headless --path . -s res://tests/run_tests.gd
+
+# smoke run: load main scene and process one frame headless (must exit 0)
+"$LOCALAPPDATA/Microsoft/WinGet/Links/godot.cmd" --headless --path . --quit
 ```
 
-PowerShell/CMD expose it as `godot` directly. CI (to be added in S01) installs Godot independently of winget — keep the version pinned to 4.7.2-stable.
+PowerShell/CMD expose it as `godot` directly. CI (`.github/workflows/ci.yml`) installs Godot independently of winget — keep the version pinned to 4.7.2-stable in both places.
 
 ## Code Style
 

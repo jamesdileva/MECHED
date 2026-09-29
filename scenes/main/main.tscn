@@ -1,0 +1,45 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/battlefield/battlefield.tscn" id="2_bf"]
+[ext_resource type="Script" path="res://scripts/core/game_camera.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/ui/debug_hud.gd" id="4_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat1"]
+sky_horizon_color = Color(0.66, 0.67, 0.71, 1)
+ground_horizon_color = Color(0.66, 0.67, 0.71, 1)
+
+[sub_resource type="Sky" id="Sky1"]
+sky_material = SubResource("SkyMat1")
+
+[sub_resource type="Environment" id="Env1"]
+background_mode = 2
+sky = SubResource("Sky1")
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.9, -0.6, 0)
+shadow_enabled = true
+
+[node name="Battlefield" parent="." instance=ExtResource("2_bf")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 8, 20)
+script = ExtResource("3_cam")
+
+[node name="DebugHUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="Status" type="Label" parent="DebugHUD"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 700.0
+offset_bottom = 200.0
+theme_override_font_sizes/font_size = 15
+text = "MECHED"
