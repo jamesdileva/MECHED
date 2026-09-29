@@ -1,0 +1,18 @@
+# Godot 4+ specific ignores
+.godot/
+
+# Godot export credentials (never commit)
+export_credentials.cfg
+
+# Imported translations (auto-generated from CSV)
+*.translation
+
+# Mono-specific (unused; GDScript project)
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS / tooling junk
+.DS_Store
+Thumbs.db
+*.tmp
