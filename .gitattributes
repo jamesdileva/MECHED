@@ -1,0 +1,11 @@
+# Normalize line endings: Godot prefers LF
+* text=auto eol=lf
+
+# Godot binary assets
+*.png binary
+*.jpg binary
+*.webp binary
+*.wav binary
+*.ogg binary
+*.glb binary
+*.gltf binary
