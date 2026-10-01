@@ -1,14 +1,6 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=8 format=3]
 
-[sub_resource type="StandardMaterial3D" id="mat_ground"]
-albedo_color = Color(0.32, 0.48, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="mesh_ground"]
-material = SubResource("mat_ground")
-size = Vector3(60, 1, 12)
-
-[sub_resource type="BoxShape3D" id="shape_ground"]
-size = Vector3(60, 1, 12)
+[ext_resource type="PackedScene" path="res://scenes/battlefield/terrain_system.tscn" id="1_terrain"]
 
 [sub_resource type="StandardMaterial3D" id="mat_platform"]
 albedo_color = Color(0.55, 0.42, 0.3, 1)
@@ -32,14 +24,7 @@ size = Vector3(1, 1, 1)
 
 [node name="Battlefield" type="Node3D"]
 
-[node name="Ground" type="StaticBody3D" parent="."]
-position = Vector3(0, -0.5, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Ground"]
-mesh = SubResource("mesh_ground")
-
-[node name="Collision" type="CollisionShape3D" parent="Ground"]
-shape = SubResource("shape_ground")
+[node name="TerrainSystem" parent="." instance=ExtResource("1_terrain")]
 
 [node name="PlatformA" type="StaticBody3D" parent="."]
 position = Vector3(-12, 2.5, 0)

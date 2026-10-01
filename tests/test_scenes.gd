@@ -23,17 +23,19 @@ func test_main_scene_loads_and_is_assembled() -> void:
 	main.free()
 
 
-func test_battlefield_has_playable_ground() -> void:
+func test_battlefield_has_destructible_terrain() -> void:
 	var scene: PackedScene = load("res://scenes/battlefield/battlefield.tscn")
 	assert_true(scene != null, "battlefield.tscn loads")
 	if scene == null:
 		return
 	var battlefield: Node = scene.instantiate()
-	var ground: Node = battlefield.get_node_or_null("Ground")
-	assert_true(ground is StaticBody3D, "battlefield has a StaticBody3D ground")
-	if ground is StaticBody3D:
-		assert_true(ground.get_node_or_null("Collision") is CollisionShape3D,
-				"ground has a collision shape")
+	var terrain: Node = battlefield.get_node_or_null("TerrainSystem")
+	assert_true(terrain != null, "battlefield instances the TerrainSystem")
+	if terrain != null:
+		assert_true(terrain.get_node_or_null("Collision") is StaticBody3D,
+				"terrain has a collision body")
+		assert_true(terrain.get_node_or_null("Surface") != null,
+				"terrain has a surface holder for chunk meshes")
 	battlefield.free()
 
 

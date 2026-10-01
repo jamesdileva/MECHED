@@ -28,6 +28,9 @@ const CHARGE_TIME := 1.2
 
 var turn_manager
 var entities: Array[Node] = []
+## Destructible terrain (terrain_system.gd), wired by Main. Craters are carved
+## at every projectile impact before the turn resolves.
+var terrain = null
 
 
 ## Wires the entity list (index = turn order) and begins the match.
@@ -118,6 +121,9 @@ func _resolve_impact(position: Vector3) -> void:
 			var damage := Ballistics.damage_falloff(dist)
 			if damage > 0.0:
 				_apply_damage(collider, damage)
+
+	if terrain != null:
+		terrain.apply_explosion(position, Ballistics.EXPLOSION_RADIUS)
 
 	turn_manager.finish_resolution()
 

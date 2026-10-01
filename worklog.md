@@ -5,6 +5,32 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-01 — S05 · Terrain Destruction
+
+**Scope (planned):** per roadmap S05 — the battlefield becomes persistent destructible state, following architecture.md §5's "Destruction Mask" and implementation-guide §9 (manageable system now, voxel only if ever proven necessary). Representation decision: a **2D cell mask in the X–Y gameplay plane, extruded into a fixed Z slab** — the side-on game plays entirely in X–Y, and a 2D mask supports tunnels/overhangs later (S13) where a heightmap would not, and serializes as a byte array for future replay/multiplayer sync. Layers: `terrain_grid.gd` (pure RefCounted: cell mask, `destroy_circle`, surface query, `is_solid_world`, serialize/deserialize — fully headless-testable), `terrain_mesher.gd` (pure static: builds visual+collision triangle geometry per chunk from the mask — only exposed faces, grass tops over dirt, front cross-section caps), `terrain_system.gd` (Node3D: chunked rebuilds — 0.25m cells, 32-cell chunks, one ConcavePolygonShape3D + ArrayMesh per touched chunk; `apply_explosion/restore/serialize/query_surface_y`). Integration: battlefield's box Ground is replaced by the generated TerrainSystem (flat 4m-deep ground, top at y=0); MatchController carves a crater at every projectile impact (before finishing resolution). Unshaded vertex-colored material + backface collision chosen deliberately so winding/normals can never make terrain invisible or uncollidable. The old StaticBody3D platforms remain as (not-yet-destructible) structures.
+
+**Done:**
+
+- `scripts/terrain/terrain_grid.gd` — pure mask: 0.25m cells, row 0 = top, `destroy_circle` (returns cells removed), `destroy_rect`-ready, `query_surface_y` (NAN when dug through), `is_solid_world`, byte-exact `serialize`/`deserialize`.
+- `scripts/terrain/terrain_mesher.gd` — pure static: per-chunk triangles from the mask; only exposed faces (top/bottom/sides span the Z slab, front cross-section caps), grass tops over dirt via per-vertex colors; the same triangle array drives mesh AND ConcavePolygonShape3D so visuals and collision cannot drift.
+- `scripts/terrain/terrain_system.gd` + scene — chunked rebuilds (32-cell chunks, 8×2 chunks over the 60×12m field); `apply_explosion` carves then rebuilds only overlapping chunks; `restore`/`serialize`/`deserialize`/`query_surface_y` exposed. Empty chunks drop their mesh+shape.
+- Battlefield: box Ground removed, generated TerrainSystem in its place (flat 4m slab, top y=0); platforms remain as structures. MatchController carves a crater at every impact before finishing resolution; Main wires the reference.
+
+**Fixed during verification:**
+
+- **Inverted-row bug caught by the new tests before it could ship:** the mask's row axis runs top-to-bottom (inverted vs world y), so `destroy_circle`'s lo..hi cell range was empty for any descending box — nothing was ever carved (tests reported 0 cells removed). Fixed with per-axis min/max in both the grid and the chunk-dirty computation.
+- Same repeated GDScript lesson: `:=` cannot infer through untyped `load()` handles — explicit types in terrain_system and the mesher.
+- Two test-geometry errors of my own corrected against the real slab: a 2.5m blast at mid-depth punches clean through 4m of ground (surface query → NAN), and a bottom-centered 1.5m blast hollows the floor without opening a through-hole.
+
+**Verification (roadmap S05 checklist):**
+
+- `--import` exit 0; `--quit` smoke run exit 0; tests **46/46 passed** — 10 terrain tests cover crater carving (mask + plausible πr² count), repeated explosions keep carving, surface query drops with craters, through-dug pits (no surface), serialize roundtrip, mesher reflects destruction, empty chunks emit nothing; battlefield scene test now asserts the TerrainSystem; all prior suites green.
+- Still manual (needs eyes/desktop): F5 → fire at the ground → crater forms visibly (grass rim, dirt cross-section), mechs can walk in/fall into craters, shell collisions use the new geometry, repeated shots keep deforming the battlefield, terrain never renders invisible (unshaded + cull-disabled by design).
+
+**Next:** S06 — Knockback (explosion force: distance × mech mass; pushes positioning forward).
+
+---
+
 ## 2026-10-01 — S04B · Controller Support (verification sprint)
 
 **Scope (planned):** most of S04B's build list was deliberately front-loaded by the from-day-one input architecture: the both-devices action map (S01), the InputLayer facade (S01), analog stick aiming + trigger fire (S04), end_turn on Q/B (S03), and per-action deadzones as global config (0.25, project.godot). What remained for this sprint:
@@ -18,7 +44,9 @@ Weapon cycling (Tab/LB/RB) has no weapons to cycle until S11 — bindings verifi
 
 **Verification (manual — pending user playtest):** (1) move/jump on both keyboard and gamepad in the same session; (2) stick aiming precision feels comparable to keyboard aiming; (3) unplug the controller mid-turn — the turn still passes via timer and keyboard keeps working; (4) camera pans with movement; (5) dummy HP visibly drops; (6) crate clear of spawn.
 
-**Status:** automated portion green; closing after the user's checklist run.
+**Status:** **CLOSED 2026-10-01** — user playtest passed: both devices work in one session with free switching, stick aim precision good, turns always progressed. Literal mid-turn disconnect untested by hand, but the guarantee is turn-timer-based and proven by `test_turn_system.gd` (a turn passes with zero input), so the sprint closes per its verification criteria.
+
+**Next:** S05 — Terrain Destruction.
 
 ---
 

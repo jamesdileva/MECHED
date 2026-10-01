@@ -12,6 +12,7 @@ extends Node3D
 func _ready() -> void:
 	_camera.follow_target = $Mech
 	_match.setup([$Mech, $DummyMech])
+	_match.terrain = $Battlefield/TerrainSystem
 
 
 func _unhandled_input(event: InputEvent) -> void:
