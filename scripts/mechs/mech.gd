@@ -43,7 +43,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	aim_angle = clampf(aim_angle - aim_axis * AIM_SPEED_DEG * delta, AIM_MIN_DEG, AIM_MAX_DEG)
 	_aim_pivot.rotation.z = deg_to_rad(aim_angle)
-	velocity = _movement.compute_velocity(velocity, is_on_floor(), delta)
+	velocity = _movement.compute_velocity(velocity, move_axis, want_jump, is_on_floor(), delta)
 	move_and_slide()
 	position = _movement.clamp_position(position)
 	_update_facing(move_axis, delta)

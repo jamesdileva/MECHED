@@ -60,7 +60,7 @@ mesh = SubResource("mesh_platform")
 shape = SubResource("shape_platform")
 
 [node name="Crate" type="RigidBody3D" parent="."]
-position = Vector3(0, 8, 0)
+position = Vector3(5, 8, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="Crate"]
 mesh = SubResource("mesh_crate")

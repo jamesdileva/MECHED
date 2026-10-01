@@ -5,6 +5,18 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-01 — S04.1 · Playtest Fixes
+
+**Scope (planned):** first user playtest of S02–S04 found: (1) mech could not move or jump although the HUD showed the inputs arriving and the movement budget draining — a regression from S03; (2) the crate spawns onto the player mech's head; (3) damage to the DummyMech was invisible (HUD only showed the player's health); (4) no in-world power readout while charging (S19 combat UI will own that; the debug HUD has the numbers). Dash/ability inputs having no gameplay is expected (S08+/S23).
+
+**Root cause (1):** S03's mech rewrite moved driver intent onto the mech but `compute_velocity()` still read the controller's own `move_axis`/`want_jump` variables, which nothing set anymore — the mech permanently saw axis 0 / no jump. The S02 tests covered the controller in isolation; the mech↔controller wiring has no automated coverage (it needs physics frames). Fix is structural, not just the one-line restore: intent now flows as explicit arguments — `compute_velocity(current, axis, jump, on_floor, delta)` — and the controller stores no intent state at all, so this class of silent wiring bug is impossible by construction. Kinematics tests updated to the pure signature (+1 direction test).
+
+**Also fixed:** (2) crate spawn moved off the player (0,8,0 → 5,8,0). (3) HUD combat line now lists every entity's health straight from `MatchState.mech_health` (the source of truth) plus player aim/charge — dummy damage is visible. (4) Polish found while in there: jump and fire-charging are now move-phase-gated in the match layer, so nothing movement-related can happen while a shell is in flight.
+
+**Verification:** import exit 0; smoke run exit 0; tests **37/37 passed**; CI green. Manual re-check pending (doubles as the S04B checklist below): move/jump on keyboard and gamepad, camera pan, facing flip, dummy HP drop in HUD, crate clear of spawn.
+
+---
+
 ## 2026-09-30 — S04 · First Projectile
 
 **Scope (planned):** per roadmap S04 — the fundamental artillery system. Pure math module `scripts/combat/ballistics.gd` (RefCounted, static): power→speed (8–30 m/s), angle+facing→launch velocity, analytic time-of-flight/range on a ground plane, explosion damage falloff (direct hit ≤0.75m = full 40 dmg, linear to 0 at 2.5m radius) — one deterministic source of truth for the projectile, the future AI shot planner, and tests (guide §16: gravity, flight, direct/partial damage). Turn flow inserts FIRE→RESOLVING: `FireAction` (carries charge 0–1) accepted only in MOVE phase → RESOLVING (movement/aim/fire/end-turn all blocked, timer paused) → `finish_resolution()` ends the turn. Presentation: RigidBody3D projectile (physics owns flight per guide §10; CCD on) launched from a new mech AimPivot/Muzzle; aiming = aim_up/down rotates barrel 0–90° (persistent per mech), hold-fire charges ~1.2s, release fires; expanding-sphere explosion FX; damage applied by MatchController via deferred sphere query (space-lock safe), health tracked in MatchState (`mech_health` — the state object is the source of truth; mech node holds a synced mirror for the HUD). Design decision recorded: aiming runs in parallel with movement during the turn (GunBound-style) rather than a strict sequential weapon phase — architecture.md §7 annotated; sequential phases return when abilities exist (S08+). Known trade-off: engine-integrated projectiles are not cross-machine deterministic — flagged for S39/S41 multiplayer work.

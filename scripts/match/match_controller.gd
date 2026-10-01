@@ -63,19 +63,24 @@ func _physics_process(delta: float) -> void:
 func _drive_player(mech, index: int, delta: float) -> void:
 	mech.aim_axis = InputLayer.get_aim_axis()
 	mech.move_axis = turn_manager.apply_movement(index, InputLayer.get_move_axis(), delta)
-	mech.want_jump = InputLayer.is_action_just_pressed("jump")
+	# Movement intents are move-phase only; the turn manager double-checks
+	# apply_movement/submit_action, but the mech must never even see a jump
+	# or a charging barrel while a shell is in flight.
+	var in_move_phase: bool = turn_manager.state.is_in_move_phase()
+	mech.want_jump = in_move_phase and InputLayer.is_action_just_pressed("jump")
 
-	if InputLayer.is_action_pressed("fire"):
-		mech.charge = minf(mech.charge + delta / CHARGE_TIME, 1.0)
-	elif InputLayer.is_action_just_released("fire") and mech.charge > 0.0:
-		var action = FireAction.new()
-		action.power = mech.charge
-		if turn_manager.submit_action(action, index):
-			_spawn_projectile(mech, mech.charge)
-		mech.charge = 0.0
+	if in_move_phase:
+		if InputLayer.is_action_pressed("fire"):
+			mech.charge = minf(mech.charge + delta / CHARGE_TIME, 1.0)
+		elif InputLayer.is_action_just_released("fire") and mech.charge > 0.0:
+			var action = FireAction.new()
+			action.power = mech.charge
+			if turn_manager.submit_action(action, index):
+				_spawn_projectile(mech, mech.charge)
+			mech.charge = 0.0
 
-	if InputLayer.is_action_just_pressed("end_turn"):
-		turn_manager.submit_action(EndTurnAction.new(), index)
+		if InputLayer.is_action_just_pressed("end_turn"):
+			turn_manager.submit_action(EndTurnAction.new(), index)
 
 
 func _spawn_projectile(mech, power: float) -> void:

@@ -48,10 +48,20 @@ func _match_text() -> String:
 
 
 func _combat_text() -> String:
+	# Health comes from MatchState via the match controller (source of truth)
+	# so damage to ANY entity is visible, not just the player mech.
+	var line := "<no match>"
+	var match_ctrl: Node = get_tree().get_first_node_in_group("match_controller")
+	if match_ctrl != null:
+		var s = match_ctrl.turn_manager.state
+		var parts: PackedStringArray = []
+		for entity_name in s.entity_names:
+			parts.append("%s %.0f" % [entity_name, s.entity_health(entity_name)])
+		line = " | ".join(parts)
 	var mech: Node = get_tree().get_first_node_in_group("mech")
-	if mech == null:
-		return "<none>"
-	return "hp %.0f  aim %.0f°  pow %.2f" % [mech.health, mech.aim_angle, mech.charge]
+	if mech != null:
+		line += "  aim %.0f°  pow %.2f" % [mech.aim_angle, mech.charge]
+	return line
 
 
 func _flag(value: bool) -> String:
