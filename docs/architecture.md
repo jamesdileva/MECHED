@@ -630,6 +630,7 @@ aim_down           Down arrow            Right stick down
 fire               Enter (hold = power)  RT / R2 (hold = power)
 cycle_weapon       Tab                   LB / RB
 use_ability        E                     LT / L2
+end_turn           Q                     B / Circle
 pause              Esc                   Start
 ```
 

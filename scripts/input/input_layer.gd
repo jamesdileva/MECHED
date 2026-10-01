@@ -19,6 +19,7 @@ const ALL_ACTIONS: PackedStringArray = [
 	"fire",
 	"cycle_weapon",
 	"use_ability",
+	"end_turn",
 	"pause",
 ]
 

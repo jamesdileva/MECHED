@@ -22,16 +22,23 @@ func _run_all() -> bool:
 	var total := 0
 	for path in _discover():
 		var script: GDScript = load(path)
-		if script == null:
-			printerr("FAIL <load> %s" % path)
+		if script == null or not script.can_instantiate():
+			# can_instantiate() is false for parse errors — record and keep
+			# going so one broken file cannot silently void the whole run.
+			printerr("  FAIL %s — script failed to load or parse" % path.get_file())
 			any_failed = true
 			continue
 		var instance: RefCounted = script.new()
 		for method in _test_methods(instance):
 			total += 1
+			instance.set("assertions_made", 0)
 			instance.call(method)
 			if instance.has_method("cleanup"):
 				instance.cleanup()
+			# A crashed test aborts before recording failures and would
+			# silently "pass"; the project convention is every test asserts.
+			if instance.get("assertions_made") == 0:
+				instance.failures.append("no assertions ran — test likely crashed mid-run")
 			if instance.failures.is_empty():
 				print("  PASS %s.%s" % [path.get_file(), method])
 			else:

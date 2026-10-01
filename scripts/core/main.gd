@@ -1,15 +1,17 @@
 extends Node3D
-## Combat sandbox entry point (S01/S02).
+## Combat sandbox entry point (S01–S03).
 ##
-## Assembles battlefield, mech, side-on camera, and debug HUD. Gameplay
-## systems attach under Main as sprints add them; this node never implements
-## game rules itself.
+## Assembles battlefield, mechs, the match layer, side-on camera, and debug
+## HUD. Gameplay systems attach under Main as sprints add them; this node
+## never implements game rules itself.
 
 @onready var _camera: Camera3D = $Camera3D
+@onready var _match: Node = $MatchController
 
 
 func _ready() -> void:
 	_camera.follow_target = $Mech
+	_match.setup([$Mech, $DummyMech])
 
 
 func _unhandled_input(event: InputEvent) -> void:

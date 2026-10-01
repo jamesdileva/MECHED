@@ -5,6 +5,34 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-09-30 — S03 · Turn System
+
+**Scope (planned):** per roadmap S03 — convert movement into turn-based gameplay. Pure, headless-testable simulation split per implementation-guide §3/§4/§5: `MatchState` (data + queries: turn number, active entity, phase, movement budget, turn timer, match_result placeholder) and `TurnManager` (begin/advance/end turns, budget movement, validate actions — no weapon/AI logic inside it). Discrete `MatchAction` abstraction starting with `EndTurnAction` (Q / gamepad B), submitted via `submit_action()`; continuous movement goes through `apply_movement()` which consumes the per-turn movement budget (3.0s of moving, tunable) — deliberate split, documented: discrete actions for replay, continuous intent for locomotion. `MatchController` (Node shim) reads InputLayer ONLY for the active player entity and zeroes intent for all others — the structural guarantee behind "no moving during another entity's turn"; the dummy opponent (second mech on PlatformB) idles and passes via the turn timer (15s). Mech rework: intent (`move_axis`/`want_jump`) is set externally per tick; the body never reads devices. Fire phase arrives with S04; energy replaces the time budget in S07.
+
+**Done:**
+
+- `scripts/match/` — `match_state.gd` (pure data + queries), `turn_manager.gd` (turn flow, budget, validation; consts TURN_TIME 15s / MOVE_BUDGET 3.0s), `match_action.gd` + `action_end_turn.gd` (discrete action base + first action), `match_controller.gd` (presentation shim: active-entity-only input, zeroes everyone else, `status_line()` for the HUD).
+- `mech.gd` reworked to intent-driven: `move_axis`/`want_jump` set externally per tick, `want_jump` consumed after use (edge semantics); `respawn_point` is now an export so the dummy overrides it. Body never touches input devices.
+- `end_turn` action added to the input map — Q + gamepad B/Circle — keeping the both-devices contract; architecture.md §18 map updated.
+- Main scene: `MatchController` node (processed before mechs so intent lands same-frame) + `DummyMech` instance on PlatformB.
+- Debug HUD shows the turn line: `turn N | <name> | move X.Xs | timer Y.Ys`.
+- Test harness hardened twice this sprint: (1) zero-assertion tripwire — a test that crashes mid-run used to silently "pass"; the runner now fails any test making no assertions; (2) parse-error guard — a test file that fails to parse aborted the whole run with exit 0; the runner now records it as a failure via `can_instantiate()` and continues.
+
+**Fixed during verification:**
+
+- TurnManager/MatchState are RefCounted: test handles must stay untyped (`-> Node` annotation rejects RefCounted at runtime, aborting tests before any assert) and must NOT go through `_add_cleanup` (Node-only); RefCounted self-releases.
+- Caught by the new tripwire while fixing the above: script errors inside tests produce silent PASSes — hence the harness changes above.
+
+**Verification (roadmap S03 checklist):**
+
+- `--import` exit 0; `--quit` smoke run exit 0, no script errors.
+- Tests: **22/22 passed** — 9 new turn-system tests cover the roadmap verification directly: two entities alternate turns (end-turn action + wrap-around + turn numbering), a non-active entity cannot move and cannot end the turn (simulation-level rejection), turn timer expiry passes the turn, movement budget consumes only while moving and does not auto-end the turn; plus S01/S02 suites still green and `end_turn` now enforced in the both-devices action contract.
+- Still manual (needs eyes/desktop): F5 → turns alternate between Mech and DummyMech (HUD turn line), player moves only on their own turn (input is dead during the dummy's 15s timer), Q/gamepad-B ends the turn early, F1 still resets.
+
+**Next:** S04 — First Projectile (angle/power aiming, ballistic arc, explosion, damage — the FIRE phase slots into the turn between movement and end).
+
+---
+
 ## 2026-09-28 — S02 · Basic Mech Controller
 
 **Scope (planned):** per roadmap S02 — one playable mech. `mech.tscn` (CharacterBody3D) with a generic `MechMovementController` node whose kinematics are pure functions (acceleration toward an axis intent, gravity when airborne, jump impulse, movement-limit clamps) so the movement rules are unit-testable without stepping physics. Mech root reads input exclusively via `InputLayer` and feeds the controller `move_axis` / `want_jump` — the same interface an AI driver will use later (implementation-guide §6/§11). Basic facing (visual yaw toward movement), battlefield X bounds + locked side-plane Z, kill-plane respawn, F1 debug reset (implementation-guide §17; raw debug keys are intentionally outside the device-agnostic action contract). Camera3D follows the mech side-on. Debug HUD gains a mech state line. Tests: controller kinematics, clamps, respawn, scene structure.

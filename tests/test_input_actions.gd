@@ -5,7 +5,7 @@ extends "res://tests/test_base.gd"
 
 const REQUIRED_ACTIONS := [
 	"move_left", "move_right", "jump", "dash", "aim_up",
-	"aim_down", "fire", "cycle_weapon", "use_ability", "pause",
+	"aim_down", "fire", "cycle_weapon", "use_ability", "end_turn", "pause",
 ]
 
 

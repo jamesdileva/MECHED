@@ -77,6 +77,6 @@ func test_mech_respawns_below_kill_plane() -> void:
 	mech.position = Vector3(0, -11, 0)
 	assert_true(mech.should_respawn(), "below kill plane triggers respawn")
 	mech.respawn()
-	assert_equal(mech.position, mech.RESPAWN_POINT, "respawn restores spawn point")
+	assert_equal(mech.position, mech.respawn_point, "respawn restores spawn point")
 	assert_equal(mech.velocity, Vector3.ZERO, "respawn clears velocity")
 	mech.free()

@@ -1,19 +1,22 @@
 extends CharacterBody3D
-## The player mech (S02): physics body + input wiring.
+## A mech body (S02/S03): physics, facing, respawn.
 ##
-## Movement rules live in the Movement child (mech_movement_controller.gd);
-## this script only translates InputLayer state into driver intent, applies
-## the controller's kinematics, handles facing (presentation), and respawn.
-## Mech identity/stats become data-driven MechDefinition resources in S08+.
+## Movement rules live in the Movement child (mech_movement_controller.gd).
+## move_axis / want_jump are driver intent, set externally every physics tick
+## by the MatchController (player input today, an AI driver later — the same
+## interface). The body never reads input devices itself.
 
-const RESPAWN_POINT := Vector3(0, 3, 0)
+@export var respawn_point := Vector3(0, 3, 0)
+
 const KILL_PLANE_Y := -10.0
 const FACING_DEADZONE := 0.1
 
-# Position is battlefield-local: Main is the unmoved match root, so local ==
-# global in-game. Keeping rules in local frame also keeps them testable
-# headless without a tree entry (and matches the MatchState direction: state
-# as data, not scene-graph transforms).
+## Driver intent, set externally each physics tick by the match layer.
+var move_axis := 0.0
+var want_jump := false
+
+# Typed via get_node rather than a global class reference so headless script
+# mode never depends on global class registration.
 @onready var _movement: Node = $Movement
 @onready var _visual: Node3D = $Visual
 
@@ -23,14 +26,13 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_movement.move_axis = InputLayer.get_move_axis()
-	_movement.want_jump = InputLayer.is_action_just_pressed("jump")
 	velocity = _movement.compute_velocity(velocity, is_on_floor(), delta)
 	move_and_slide()
 	position = _movement.clamp_position(position)
-	_update_facing(_movement.move_axis, delta)
+	_update_facing(move_axis, delta)
 	if should_respawn():
 		respawn()
+	want_jump = false
 
 
 func _update_facing(axis: float, delta: float) -> void:
@@ -45,5 +47,5 @@ func should_respawn() -> bool:
 
 
 func respawn() -> void:
-	position = RESPAWN_POINT
+	position = respawn_point
 	velocity = Vector3.ZERO

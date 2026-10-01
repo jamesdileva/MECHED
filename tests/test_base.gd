@@ -3,6 +3,7 @@ extends RefCounted
 ## Test scripts extend this by path and implement `test_*` methods.
 
 var failures: PackedStringArray = []
+var assertions_made := 0
 var _context := ""
 var _owned_nodes: Array[Node] = []
 
@@ -26,10 +27,12 @@ func cleanup() -> void:
 
 
 func assert_true(condition: bool, what: String) -> void:
+	assertions_made += 1
 	if not condition:
 		failures.append("expected true: %s" % what)
 
 
 func assert_equal(actual: Variant, expected: Variant, what: String) -> void:
+	assertions_made += 1
 	if actual != expected:
 		failures.append("%s: expected %s, got %s" % [what, expected, actual])

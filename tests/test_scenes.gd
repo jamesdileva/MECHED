@@ -16,6 +16,9 @@ func test_main_scene_loads_and_is_assembled() -> void:
 	var main: Node = scene.instantiate()
 	assert_true(main.get_node_or_null("Camera3D") is Camera3D, "main has a Camera3D")
 	assert_true(main.get_node_or_null("Battlefield") != null, "main instances the battlefield")
+	assert_true(main.get_node_or_null("MatchController") != null, "main has the MatchController")
+	assert_true(main.get_node_or_null("Mech") != null, "main has the player mech")
+	assert_true(main.get_node_or_null("DummyMech") != null, "main has the dummy opponent")
 	assert_true(main.get_node_or_null("DebugHUD") != null, "main has the debug HUD")
 	main.free()
 

@@ -12,6 +12,7 @@ func _process(_delta: float) -> void:
 		"MECHED | %s | FPS %d" % [Engine.get_version_info()["string"], Engine.get_frames_per_second()],
 		"camera %s" % _camera_text(),
 		"mech   %s" % _mech_text(),
+		"turn   %s" % _match_text(),
 		"input  move %+.2f   aim %+.2f" % [snap["move"], snap["aim"]],
 		"input  jump %s  dash %s  fire %s  ability %s" % [
 			_flag(snap["jump"]), _flag(snap["dash"]), _flag(snap["fire"]), _flag(snap["ability"]),
@@ -36,6 +37,13 @@ func _mech_text() -> String:
 	var vel: Vector3 = mech.velocity.snapped(Vector3(0.1, 0.1, 0.1))
 	var state := "floor" if mech.is_on_floor() else "air"
 	return "pos %s  vel %s  %s" % [pos, vel, state]
+
+
+func _match_text() -> String:
+	var match_ctrl: Node = get_tree().get_first_node_in_group("match_controller")
+	if match_ctrl == null:
+		return "<no match>"
+	return match_ctrl.status_line()
 
 
 func _flag(value: bool) -> String:

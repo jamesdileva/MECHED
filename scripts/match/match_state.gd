@@ -1,0 +1,47 @@
+extends RefCounted
+## Central match state (implementation-guide §3) — pure data and queries, no
+## scene dependencies. Reconstructable, headless-testable: the TurnManager
+## mutates it, presentation only reads it. Terrain/projectile/objective state
+## join this object in later sprints.
+
+enum Phase { INACTIVE, MOVE }
+# S04 inserts the weapon phase between MOVE and turn end (architecture.md §7);
+# match_result is filled by the victory system later.
+
+var started := false
+var turn_number := 0
+var entity_names: PackedStringArray = []
+var active_index := -1
+var phase: int = Phase.INACTIVE
+var movement_budget_left := 0.0
+var turn_time_left := 0.0
+var match_result := &""
+
+
+func begin_match(names: PackedStringArray, budget: float, turn_time: float) -> void:
+	started = true
+	turn_number = 1
+	entity_names = names
+	active_index = 0
+	phase = Phase.MOVE
+	movement_budget_left = budget
+	turn_time_left = turn_time
+
+
+func active_entity_name() -> String:
+	if active_index < 0 or active_index >= entity_names.size():
+		return "<none>"
+	return entity_names[active_index]
+
+
+func is_active(index: int) -> bool:
+	return started and index == active_index
+
+
+func is_in_move_phase() -> bool:
+	return started and phase == Phase.MOVE
+
+
+## The active entity may move while the turn's movement budget lasts.
+func can_move() -> bool:
+	return is_in_move_phase() and movement_budget_left > 0.0
