@@ -12,6 +12,7 @@ func _process(_delta: float) -> void:
 		"MECHED | %s | FPS %d" % [Engine.get_version_info()["string"], Engine.get_frames_per_second()],
 		"camera %s" % _camera_text(),
 		"mech   %s" % _mech_text(),
+		"combat %s" % _combat_text(),
 		"turn   %s" % _match_text(),
 		"input  move %+.2f   aim %+.2f" % [snap["move"], snap["aim"]],
 		"input  jump %s  dash %s  fire %s  ability %s" % [
@@ -44,6 +45,13 @@ func _match_text() -> String:
 	if match_ctrl == null:
 		return "<no match>"
 	return match_ctrl.status_line()
+
+
+func _combat_text() -> String:
+	var mech: Node = get_tree().get_first_node_in_group("mech")
+	if mech == null:
+		return "<none>"
+	return "hp %.0f  aim %.0f°  pow %.2f" % [mech.health, mech.aim_angle, mech.charge]
 
 
 func _flag(value: bool) -> String:

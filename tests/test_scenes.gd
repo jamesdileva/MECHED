@@ -35,3 +35,28 @@ func test_battlefield_has_playable_ground() -> void:
 		assert_true(ground.get_node_or_null("Collision") is CollisionShape3D,
 				"ground has a collision shape")
 	battlefield.free()
+
+
+func test_projectile_scene_is_physics_ready() -> void:
+	var scene: PackedScene = load("res://scenes/projectiles/projectile.tscn")
+	assert_true(scene != null, "projectile.tscn loads")
+	if scene == null:
+		return
+	var projectile: Node = scene.instantiate()
+	assert_true(projectile is RigidBody3D, "projectile root is a RigidBody3D")
+	assert_true(projectile.get_node_or_null("Collision") is CollisionShape3D,
+			"projectile has a collision shape")
+	# Fast shells tunnel without CCD, and body_entered needs contact monitoring.
+	assert_true(projectile.continuous_cd, "projectile uses continuous collision detection")
+	assert_true(projectile.contact_monitor, "projectile reports contacts")
+	projectile.free()
+
+
+func test_explosion_effect_scene_structure() -> void:
+	var scene: PackedScene = load("res://scenes/projectiles/explosion_effect.tscn")
+	assert_true(scene != null, "explosion_effect.tscn loads")
+	if scene == null:
+		return
+	var fx: Node = scene.instantiate()
+	assert_true(fx.get_node_or_null("Blast") is MeshInstance3D, "explosion has a blast mesh")
+	fx.free()

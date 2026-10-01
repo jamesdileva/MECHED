@@ -31,9 +31,15 @@ shape = SubResource("shape_body")
 [node name="Body" type="MeshInstance3D" parent="Visual"]
 mesh = SubResource("mesh_body")
 
-[node name="Barrel" type="MeshInstance3D" parent="Visual"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.85, 0.25, 0)
+[node name="AimPivot" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.3, 0)
+
+[node name="Barrel" type="MeshInstance3D" parent="Visual/AimPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 0, 0)
 mesh = SubResource("mesh_barrel")
+
+[node name="Muzzle" type="Marker3D" parent="Visual/AimPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 0, 0)
 
 [node name="Movement" type="Node" parent="."]
 script = ExtResource("2_move")

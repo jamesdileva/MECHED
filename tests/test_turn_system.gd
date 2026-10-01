@@ -7,6 +7,7 @@ extends "res://tests/test_base.gd"
 
 const TURN_MANAGER := "res://scripts/match/turn_manager.gd"
 const END_TURN_ACTION := "res://scripts/match/action_end_turn.gd"
+const FIRE_ACTION := "res://scripts/match/action_fire.gd"
 
 
 func _begin():
@@ -16,6 +17,12 @@ func _begin():
 	var tm = load(TURN_MANAGER).new()
 	tm.begin_match(PackedStringArray(["Mech", "DummyMech"]))
 	return tm
+
+
+func _fire(tm, actor: int, power := 0.5) -> bool:
+	var action = load(FIRE_ACTION).new()
+	action.power = power
+	return tm.submit_action(action, actor)
 
 
 func test_begin_match_activates_first_entity() -> void:
@@ -96,3 +103,43 @@ func test_exhausted_budget_stops_movement_without_ending_turn() -> void:
 	assert_equal(tm.apply_movement(0, 1.0, 0.1), 0.0, "empty budget suppresses movement")
 	assert_equal(tm.state.active_index, 0, "empty budget does not auto-end the turn")
 	assert_true(tm.state.can_move() == false, "can_move is false on an empty budget")
+
+
+func test_fire_action_starts_resolution() -> void:
+	var tm = _begin()
+	assert_true(_fire(tm, 0), "active entity may fire")
+	var s = tm.state
+	assert_true(s.is_resolving(), "fire puts the turn into resolution")
+	assert_equal(s.active_index, 0, "resolution keeps the same active entity")
+
+
+func test_cannot_act_again_while_resolving() -> void:
+	var tm = _begin()
+	_fire(tm, 0)
+	assert_true(_fire(tm, 0) == false, "double fire is rejected")
+	assert_equal(tm.apply_movement(0, 1.0, 0.5), 0.0, "movement is locked while resolving")
+	assert_true(tm.submit_action(load(END_TURN_ACTION).new(), 0) == false,
+			"end turn is locked while resolving")
+	tm.tick(20.0)
+	assert_true(tm.state.is_resolving(), "turn timer pauses during resolution")
+	assert_equal(tm.state.active_index, 0, "resolution still holds the turn")
+
+
+func test_finish_resolution_advances_turn() -> void:
+	var tm = _begin()
+	_fire(tm, 0)
+	tm.finish_resolution()
+	var s = tm.state
+	assert_equal(s.active_index, 1, "resolved shot passes play on")
+	assert_equal(s.turn_number, 2, "next turn is numbered")
+	assert_true(s.is_in_move_phase(), "next turn opens in the move phase")
+	assert_equal(s.movement_budget_left, tm.MOVE_BUDGET, "budget refreshed")
+
+
+func test_damage_is_tracked_in_match_state() -> void:
+	var tm = _begin()
+	var s = tm.state
+	assert_equal(s.entity_health("Mech"), s.STARTING_HEALTH, "entities start at full health")
+	assert_equal(s.apply_damage("Mech", 40.0), 60.0, "damage reduces health")
+	assert_equal(s.entity_health("Mech"), 60.0, "health is readable from state")
+	assert_equal(s.apply_damage("Mech", 200.0), 0.0, "health clamps at zero")

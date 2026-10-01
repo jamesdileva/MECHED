@@ -36,3 +36,9 @@ func assert_equal(actual: Variant, expected: Variant, what: String) -> void:
 	assertions_made += 1
 	if actual != expected:
 		failures.append("%s: expected %s, got %s" % [what, expected, actual])
+
+
+func assert_almost_equal(actual: float, expected: float, epsilon: float, what: String) -> void:
+	assertions_made += 1
+	if absf(actual - expected) > epsilon:
+		failures.append("%s: expected ~%s, got %s" % [what, expected, actual])

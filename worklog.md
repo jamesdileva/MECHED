@@ -5,6 +5,35 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-09-30 — S04 · First Projectile
+
+**Scope (planned):** per roadmap S04 — the fundamental artillery system. Pure math module `scripts/combat/ballistics.gd` (RefCounted, static): power→speed (8–30 m/s), angle+facing→launch velocity, analytic time-of-flight/range on a ground plane, explosion damage falloff (direct hit ≤0.75m = full 40 dmg, linear to 0 at 2.5m radius) — one deterministic source of truth for the projectile, the future AI shot planner, and tests (guide §16: gravity, flight, direct/partial damage). Turn flow inserts FIRE→RESOLVING: `FireAction` (carries charge 0–1) accepted only in MOVE phase → RESOLVING (movement/aim/fire/end-turn all blocked, timer paused) → `finish_resolution()` ends the turn. Presentation: RigidBody3D projectile (physics owns flight per guide §10; CCD on) launched from a new mech AimPivot/Muzzle; aiming = aim_up/down rotates barrel 0–90° (persistent per mech), hold-fire charges ~1.2s, release fires; expanding-sphere explosion FX; damage applied by MatchController via deferred sphere query (space-lock safe), health tracked in MatchState (`mech_health` — the state object is the source of truth; mech node holds a synced mirror for the HUD). Design decision recorded: aiming runs in parallel with movement during the turn (GunBound-style) rather than a strict sequential weapon phase — architecture.md §7 annotated; sequential phases return when abilities exist (S08+). Known trade-off: engine-integrated projectiles are not cross-machine deterministic — flagged for S39/S41 multiplayer work.
+
+**Done:**
+
+- `scripts/combat/ballistics.gd` — pure static math: power→speed, angle+facing→launch vector, analytic time-of-flight/range, damage falloff (direct ≤0.75m full 40 dmg → linear to 0 at 2.5m). One source of truth for projectile + future AI planner + tests.
+- `action_fire.gd` (carries charge 0–1); TurnManager handles FIRE→RESOLVING: accepted only in MOVE phase, movement/aim/fire/end-turn all locked while resolving, turn timer pauses during flight, `finish_resolution()` passes play on.
+- `MatchState`: RESOLVING phase, `mech_health` dict (authoritative health; `apply_damage` clamps at 0), `is_resolving()`.
+- `projectile.tscn` — RigidBody3D with CCD + contact monitoring (no tunneling at 30 m/s), match gravity 30 via gravity_scale; `explosion_effect.tscn` — self-expiring expanding blast (pure presentation).
+- mech: AimPivot (0–90° barrel elevation, persists between turns) + Muzzle marker; aim/charge intent set by MatchController; `facing()` signs the launch vector; health mirror via `sync_health()`.
+- MatchController: hold-fire charges over ~1.2s, release submits FireAction → spawns shell from muzzle with ballistics velocity; impact resolves deferred (space-lock safe) via sphere query → falloff damage through MatchState → finish_resolution.
+- HUD combat line: `hp | aim° | pow`; debug turn line shows `resolving` during flight.
+
+**Fixed during verification:**
+
+- Parse error caught by the S03 harness guard before it could hide: MatchController is a plain Node — `get_world_3d()` doesn't exist there; the space query now goes through `get_viewport().world_3d.direct_space_state`.
+- test_ballistics inference errors (`:=` from untyped `load()` handle) — explicit types; the parse guard recorded the broken file as FAIL instead of silently voiding it.
+
+**Verification (roadmap S04 checklist):**
+
+- `--import` exit 0; `--quit` smoke run exit 0, no script errors.
+- Tests: **36/36 passed** — 8 ballistics/damage tests (speed scaling, 45° symmetry + facing mirror, angle clamps, analytic drop time, power→range, direct/partial/zero damage falloff), 4 new fire-phase turn tests (fire→resolving, everything locked while resolving + timer paused, finish_resolution advances, health tracked/clamped in MatchState), 2 new scene-structure tests (projectile CCD/contact flags, explosion mesh); all S01–S03 suites still green.
+- Still manual (needs eyes/desktop): F5 → aim with Up/Down or right stick (HUD shows angle), hold Enter/RT to charge (HUD pow bar), release to fire, watch the arc + explosion, land hits on the DummyMech (hp drops in HUD), miss → shell explodes on terrain; turn passes after resolution.
+
+**Next:** S04B — Controller Support (analog aiming quality, both devices live in one session), then S05 — Terrain Destruction.
+
+---
+
 ## 2026-09-30 — S03 · Turn System
 
 **Scope (planned):** per roadmap S03 — convert movement into turn-based gameplay. Pure, headless-testable simulation split per implementation-guide §3/§4/§5: `MatchState` (data + queries: turn number, active entity, phase, movement budget, turn timer, match_result placeholder) and `TurnManager` (begin/advance/end turns, budget movement, validate actions — no weapon/AI logic inside it). Discrete `MatchAction` abstraction starting with `EndTurnAction` (Q / gamepad B), submitted via `submit_action()`; continuous movement goes through `apply_movement()` which consumes the per-turn movement budget (3.0s of moving, tunable) — deliberate split, documented: discrete actions for replay, continuous intent for locomotion. `MatchController` (Node shim) reads InputLayer ONLY for the active player entity and zeroes intent for all others — the structural guarantee behind "no moving during another entity's turn"; the dummy opponent (second mech on PlatformB) idles and passes via the turn timer (15s). Mech rework: intent (`move_axis`/`want_jump`) is set externally per tick; the body never reads devices. Fire phase arrives with S04; energy replaces the time budget in S07.

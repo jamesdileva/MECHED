@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/projectiles/explosion_effect.gd" id="1_fx"]
+
+[sub_resource type="SphereMesh" id="blast_mesh"]
+radius = 0.5
+height = 1.0
+
+[node name="ExplosionEffect" type="Node3D"]
+script = ExtResource("1_fx")
+
+[node name="Blast" type="MeshInstance3D" parent="."]
+mesh = SubResource("blast_mesh")

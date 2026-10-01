@@ -287,6 +287,8 @@ The player should normally be able to:
 
 The exact action economy should remain tunable.
 
+For the artillery core (S04), aiming runs **in parallel** with movement during the turn: holding fire charges power, releasing fires, and the shot puts the turn into Projectile Resolution (movement and the timer pause while the shell flies). The strict phase sequence applies once discrete ability phases exist (S08+ inserts the ability phase between movement and firing).
+
 ---
 
 # 8. Mech System
