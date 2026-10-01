@@ -5,6 +5,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-01 — S04B · Controller Support (verification sprint)
+
+**Scope (planned):** most of S04B's build list was deliberately front-loaded by the from-day-one input architecture: the both-devices action map (S01), the InputLayer facade (S01), analog stick aiming + trigger fire (S04), end_turn on Q/B (S03), and per-action deadzones as global config (0.25, project.godot). What remained for this sprint:
+
+- Automated half (already green): every sandbox action has a keyboard AND gamepad binding — enforced by `test_input_actions.gd` in CI.
+- Analog aiming precision: rate-based stick aim (70°/s at full deflection) is inherently finer-grained than the keyboard's fixed rate — variable deflection gives variable speed. No response curve added for now; tune only if playtesting asks.
+- Both devices in one session, switchable at any moment: by design (both bindings feed the same named actions; InputLayer merges them).
+- Controller disconnect never soft-locks a turn: guaranteed by the turn timer — `test_turn_system.gd` proves a turn passes with zero input.
+
+Weapon cycling (Tab/LB/RB) has no weapons to cycle until S11 — bindings verified, gameplay deferred.
+
+**Verification (manual — pending user playtest):** (1) move/jump on both keyboard and gamepad in the same session; (2) stick aiming precision feels comparable to keyboard aiming; (3) unplug the controller mid-turn — the turn still passes via timer and keyboard keeps working; (4) camera pans with movement; (5) dummy HP visibly drops; (6) crate clear of spawn.
+
+**Status:** automated portion green; closing after the user's checklist run.
+
+---
+
 ## 2026-10-01 — S04.1 · Playtest Fixes
 
 **Scope (planned):** first user playtest of S02–S04 found: (1) mech could not move or jump although the HUD showed the inputs arriving and the movement budget draining — a regression from S03; (2) the crate spawns onto the player mech's head; (3) damage to the DummyMech was invisible (HUD only showed the player's health); (4) no in-world power readout while charging (S19 combat UI will own that; the debug HUD has the numbers). Dash/ability inputs having no gameplay is expected (S08+/S23).
