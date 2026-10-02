@@ -5,6 +5,34 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-01 — S06 · Knockback
+
+**Scope (planned):** per roadmap S06 — explosion force makes positioning matter. All four roadmap variables live in a pure module `scripts/combat/knockback.gd`: `explosion_force` (14), `distance` (linear falloff — full inside 1m, zero past 5m, so blasts push farther than they damage: 2.5m damage radius), `mech_mass` (impulse/mass — heavy mechs resist), `terrain_contact` (grounded mechs absorb 50%, airborne take full force). Physics owns the result (guide §10): MatchController's impact resolution now runs ONE sphere query at knockback radius and per-mech applies damage (inside damage radius) plus `velocity += impulse` — blast impulses persist because the movement controller's floor branch stops zeroing vertical velocity (jump becomes `max(current, jump_velocity)`; resting on floor still resolves to 0 naturally via move_and_slide). No new controller state — the same no-hidden-state principle as S04.1; existing velocity becomes continuous under external impulses (input regains control by accelerating toward the axis target). Self-knockback included (rocket-jump is physical, not special-cased). Mass is an exported mech stat, ready for MechDefinition data (Bastion resists, S08+).
+
+**Done:**
+
+- `knockback.gd` — pure: `impulse(mech_pos, explosion_pos, on_ground, mass) -> velocity delta`; degenerate direction (blast at mech origin) falls back to UP.
+- Movement controller floor branch now only raises vertical velocity (jump = max), never zeroes it — blast launches survive; resting mechs settle via move_and_slide. One test pins the exact contract (residual survives / jump raises weaker launches / jump never cuts a stronger one / resting rests).
+- MatchController: single 16-result sphere query at knockback radius; per-mech damage falloff + velocity impulse; query widened from 8→16 results (5m sphere overlaps many chunk shapes).
+- `mech.gd` gains exported `mass` (1.0 default; DummyMech identical).
+
+**Fixed during verification:** one backwards test assertion (I asserted a jump must not raise an 8 m/s launch to jump speed — max() semantics are the intended contract; test rewritten to pin all four floor-branch behaviors).
+
+**Verification (roadmap S06 checklist — scenario → test mapping):**
+
+- Direct hit (explosion at feet): grounded, full force minus absorption, upward — `test_direct_hit_launches_strongest`.
+- Near miss (explosion beside airborne mech): pushed away along the falloff — `test_near_miss_pushes_away_from_blast`.
+- Explosion underneath: direction from geometry (up) + degenerate fallback — direct-hit test + `test_zero_distance_falls_back_up`.
+- Explosion beside: directional push — near-miss test.
+- Different distances: full inside 1m, partial mid-range, zero at/past 5m — `test_falloff_at_different_distances` + `test_beyond_radius_returns_zero`.
+- Mass and terrain contact: halving per doubled mass / grounded — dedicated tests.
+- `--import` exit 0; `--quit` smoke exit 0; tests **54/54 passed**; CI green.
+- Still manual (batched with S05 below): blast a mech — slide on flat ground, launch when shot underneath, get pushed off the platforms/into craters you carved, rocket-jump your own shell.
+
+**Next:** S07 — Movement Energy (the first major departure from GunBound: movement becomes a strategic resource).
+
+---
+
 ## 2026-10-01 — S05 · Terrain Destruction
 
 **Scope (planned):** per roadmap S05 — the battlefield becomes persistent destructible state, following architecture.md §5's "Destruction Mask" and implementation-guide §9 (manageable system now, voxel only if ever proven necessary). Representation decision: a **2D cell mask in the X–Y gameplay plane, extruded into a fixed Z slab** — the side-on game plays entirely in X–Y, and a 2D mask supports tunnels/overhangs later (S13) where a heightmap would not, and serializes as a byte array for future replay/multiplayer sync. Layers: `terrain_grid.gd` (pure RefCounted: cell mask, `destroy_circle`, surface query, `is_solid_world`, serialize/deserialize — fully headless-testable), `terrain_mesher.gd` (pure static: builds visual+collision triangle geometry per chunk from the mask — only exposed faces, grass tops over dirt, front cross-section caps), `terrain_system.gd` (Node3D: chunked rebuilds — 0.25m cells, 32-cell chunks, one ConcavePolygonShape3D + ArrayMesh per touched chunk; `apply_explosion/restore/serialize/query_surface_y`). Integration: battlefield's box Ground is replaced by the generated TerrainSystem (flat 4m-deep ground, top at y=0); MatchController carves a crater at every projectile impact (before finishing resolution). Unshaded vertex-colored material + backface collision chosen deliberately so winding/normals can never make terrain invisible or uncollidable. The old StaticBody3D platforms remain as (not-yet-destructible) structures.

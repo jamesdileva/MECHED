@@ -19,6 +19,7 @@ const TurnManagerScript := preload("res://scripts/match/turn_manager.gd")
 const EndTurnAction := preload("res://scripts/match/action_end_turn.gd")
 const FireAction := preload("res://scripts/match/action_fire.gd")
 const Ballistics := preload("res://scripts/combat/ballistics.gd")
+const Knockback := preload("res://scripts/combat/knockback.gd")
 const PROJECTILE_SCENE := preload("res://scenes/projectiles/projectile.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
 
@@ -109,11 +110,13 @@ func _resolve_impact(position: Vector3) -> void:
 
 	var params := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
-	sphere.radius = Ballistics.EXPLOSION_RADIUS
+	sphere.radius = Knockback.KNOCKBACK_RADIUS
 	params.shape = sphere
 	params.transform = Transform3D(Basis(), position)
 	params.collide_with_bodies = true
-	var hits := get_viewport().world_3d.direct_space_state.intersect_shape(params, 8)
+	# One query serves damage AND knockback: the blast pushes farther than it
+	# hurts, and each module zeroes itself past its own radius.
+	var hits := get_viewport().world_3d.direct_space_state.intersect_shape(params, 16)
 	for hit in hits:
 		var collider = hit.get("collider")
 		if collider is Node and collider.is_in_group("mech"):
@@ -121,6 +124,13 @@ func _resolve_impact(position: Vector3) -> void:
 			var damage := Ballistics.damage_falloff(dist)
 			if damage > 0.0:
 				_apply_damage(collider, damage)
+			var impulse: Vector3 = Knockback.impulse(
+					collider.global_position, position,
+					collider.is_on_floor(), collider.mass)
+			if impulse != Vector3.ZERO:
+				# Physics owns what the impulse becomes (guide §10): arcs,
+				# terrain, falling — the next move_and_slide integrates it.
+				collider.velocity += impulse
 
 	if terrain != null:
 		terrain.apply_explosion(position, Ballistics.EXPLOSION_RADIUS)

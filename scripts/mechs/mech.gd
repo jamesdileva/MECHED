@@ -9,6 +9,9 @@ extends CharacterBody3D
 ## and the match layer pushes values in via sync_health().
 
 @export var respawn_point := Vector3(0, 3, 0)
+## Blast resistance (knockback impulse is divided by this). Data-driven
+## MechDefinitions will populate it in S08+; heavy mechs barely move.
+@export var mass := 1.0
 
 const KILL_PLANE_Y := -10.0
 const FACING_DEADZONE := 0.1

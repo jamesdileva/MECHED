@@ -42,6 +42,22 @@ func test_jump_sets_upward_velocity() -> void:
 	assert_equal(v.y, ctrl.jump_velocity, "jump impulse applied")
 
 
+func test_floor_preserves_vertical_residual() -> void:
+	# Knockback contract (S06): the floor branch must never zero vertical
+	# velocity — a mech launched by a blast keeps rising even while the floor
+	# flag is still set for the tick. Jump only ever raises it.
+	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
+	_add_cleanup(ctrl)
+	var launched: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, false, true, 1.0 / 60.0)
+	assert_equal(launched.y, 8.0, "upward residual survives the floor branch")
+	var boosted: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, true, true, 1.0 / 60.0)
+	assert_equal(boosted.y, ctrl.jump_velocity, "jump raises a weaker launch to jump speed")
+	var preserved: Vector3 = ctrl.compute_velocity(Vector3(0, 12, 0), 0.0, true, true, 1.0 / 60.0)
+	assert_equal(preserved.y, 12.0, "jump never cuts a stronger existing launch")
+	var resting: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 0.0, false, true, 1.0 / 60.0)
+	assert_equal(resting.y, 0.0, "a resting mech still rests")
+
+
 func test_gravity_applies_when_airborne() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)

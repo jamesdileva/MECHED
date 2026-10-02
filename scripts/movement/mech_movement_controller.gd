@@ -21,13 +21,20 @@ extends Node
 
 ## Pure kinematics — no physics-server access, no hidden state — so movement
 ## rules are testable headless without stepping the physics simulation.
+##
+## `current` is continuous state: external impulses (explosion knockback) are
+## simply added to it by the match layer and persist through this function —
+## gravity integrates them airborne, and input regains control by accelerating
+## toward the axis target. The floor branch only ever RAISES vertical velocity
+## (jump), never zeroes it, so launches from blasts are not wiped on the next
+## tick; a resting mech's velocity settles to zero through move_and_slide.
 func compute_velocity(current: Vector3, axis: float, jump: bool, on_floor: bool,
 		delta: float) -> Vector3:
 	var v := current
-	if on_floor:
-		v.y = jump_velocity if jump else 0.0
-	else:
+	if not on_floor:
 		v.y -= gravity * delta
+	elif jump:
+		v.y = maxf(v.y, jump_velocity)
 	v.x = move_toward(v.x, axis * max_speed, acceleration * delta)
 	v.z = 0.0
 	return v
