@@ -34,6 +34,7 @@ shadow_enabled = true
 script = ExtResource("6_match")
 
 [node name="Mech" parent="." instance=ExtResource("5_mech")]
+position = Vector3(0, 3, 0)
 
 [node name="DummyMech" parent="." instance=ExtResource("5_mech")]
 position = Vector3(12, 7, 0)

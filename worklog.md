@@ -5,6 +5,14 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-02 — S05.1 · Spawn-under-terrain fix
+
+**Scope (planned):** batch playtest found the player mech embedded inside the terrain at match start. Root cause: the Mech instance sat at scene origin (0,0,0) — inside the ground slab — since S02, but the old convex box ground depenetrated the overlap silently; S05's concave trimesh terrain can't depenetrate an embedded body, so the mech stayed stuck (destroying the surrounding cells freed it, matching the report). Fix: the instance now spawns at its respawn point (0, 3, 0) like the DummyMech already did; scene placement stays authoritative over mech.gd. Platforms not destructing is expected — they are plain StaticBody3D structures until the destructibles sprint (S13). Terrain carving, surface change, and repeated destruction verified working by the same playtest.
+
+**Verification:** import/tests/smoke green; on-screen confirmation folds into the next batched playtest (mech should drop onto the surface at match start).
+
+---
+
 ## 2026-10-01 — S06 · Knockback
 
 **Scope (planned):** per roadmap S06 — explosion force makes positioning matter. All four roadmap variables live in a pure module `scripts/combat/knockback.gd`: `explosion_force` (14), `distance` (linear falloff — full inside 1m, zero past 5m, so blasts push farther than they damage: 2.5m damage radius), `mech_mass` (impulse/mass — heavy mechs resist), `terrain_contact` (grounded mechs absorb 50%, airborne take full force). Physics owns the result (guide §10): MatchController's impact resolution now runs ONE sphere query at knockback radius and per-mech applies damage (inside damage radius) plus `velocity += impulse` — blast impulses persist because the movement controller's floor branch stops zeroing vertical velocity (jump becomes `max(current, jump_velocity)`; resting on floor still resolves to 0 naturally via move_and_slide). No new controller state — the same no-hidden-state principle as S04.1; existing velocity becomes continuous under external impulses (input regains control by accelerating toward the axis target). Self-knockback included (rocket-jump is physical, not special-cased). Mass is an exported mech stat, ready for MechDefinition data (Bastion resists, S08+).
