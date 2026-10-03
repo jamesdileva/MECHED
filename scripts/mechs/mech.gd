@@ -9,8 +9,10 @@ extends CharacterBody3D
 ## and the match layer pushes values in via sync_health().
 
 @export var respawn_point := Vector3(0, 3, 0)
-## Blast resistance (knockback impulse is divided by this). Data-driven
-## MechDefinitions will populate it in S08+; heavy mechs barely move.
+## Data-driven identity (architecture.md §8) — applied by the match layer at
+## setup; stats below are what the definition pushes in.
+@export var definition: Resource
+## Blast resistance when no definition is applied.
 @export var mass := 1.0
 
 const KILL_PLANE_Y := -10.0
@@ -22,6 +24,7 @@ const AIM_MAX_DEG := 90.0
 ## Driver intent, set externally each physics tick by the match layer.
 var move_axis := 0.0
 var want_jump := false
+var want_dash := false
 var aim_axis := 0.0
 var charge := 0.0
 
@@ -31,6 +34,8 @@ var aim_angle := 45.0
 
 ## Health mirror — authoritative value lives in MatchState.mech_health.
 var health := 100.0
+
+var _definition: Resource = null
 
 # Typed via get_node rather than a global class reference so headless script
 # mode never depends on global class registration.
@@ -47,12 +52,43 @@ func _physics_process(delta: float) -> void:
 	aim_angle = clampf(aim_angle - aim_axis * AIM_SPEED_DEG * delta, AIM_MIN_DEG, AIM_MAX_DEG)
 	_aim_pivot.rotation.z = deg_to_rad(aim_angle)
 	velocity = _movement.compute_velocity(velocity, move_axis, want_jump, is_on_floor(), delta)
+	if want_dash:
+		want_dash = false
+		if is_on_floor() and can_dash():
+			velocity.x = _movement.dash_velocity(facing()).x
 	move_and_slide()
 	position = _movement.clamp_position(position)
 	_update_facing(move_axis, delta)
 	if should_respawn():
 		respawn()
 	want_jump = false
+
+
+## Pushes a MechDefinition's stats into the body and movement controller.
+## Uses get_node_or_null so it works on detached instances (headless tests).
+func apply_definition(def: Resource) -> void:
+	if def == null:
+		return
+	_definition = def
+	mass = def.mass
+	var mv: Node = get_node_or_null("Movement")
+	if mv != null:
+		mv.max_speed = def.max_speed
+		mv.acceleration = def.acceleration
+		mv.jump_velocity = def.jump_velocity
+		mv.dash_speed = def.dash_speed
+
+
+func can_dash() -> bool:
+	return _definition != null and _definition.dash_speed > 0.0
+
+
+func dash_cost() -> float:
+	return _definition.dash_cost if _definition != null else 25.0
+
+
+func display_name() -> String:
+	return _definition.display_name if _definition != null else String(name)
 
 
 func _update_facing(axis: float, delta: float) -> void:

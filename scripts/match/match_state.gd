@@ -66,5 +66,10 @@ func apply_damage(entity_name: String, amount: float) -> float:
 	return hp
 
 
+## Direct initialization (definitions set per-entity max health at setup).
+func set_entity_health(entity_name: String, value: float) -> void:
+	mech_health[entity_name] = value
+
+
 func entity_health(entity_name: String) -> float:
 	return mech_health.get(entity_name, 0.0)

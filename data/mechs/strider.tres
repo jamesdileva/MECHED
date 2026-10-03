@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Strider"
+max_health = 70.0
+mass = 0.8
+max_speed = 11.0
+acceleration = 48.0
+jump_velocity = 10.0
+dash_speed = 13.0
+dash_cost = 25.0

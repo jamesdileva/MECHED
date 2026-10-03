@@ -13,6 +13,8 @@ extends Node
 @export var acceleration := 40.0
 @export var jump_velocity := 10.0
 @export var gravity := 30.0
+## Grounded dash burst speed (S08); 0 when the chassis has no dash.
+@export var dash_speed := 12.0
 
 @export var bounds_min_x := -27.0
 @export var bounds_max_x := 27.0
@@ -44,3 +46,8 @@ func compute_velocity(current: Vector3, axis: float, jump: bool, on_floor: bool,
 ## gameplay plane (side-on with limited depth, architecture.md §3).
 func clamp_position(pos: Vector3) -> Vector3:
 	return Vector3(clampf(pos.x, bounds_min_x, bounds_max_x), pos.y, plane_z)
+
+
+## Grounded dash burst (S08): a flat velocity override along the facing.
+func dash_velocity(facing: float) -> Vector3:
+	return Vector3(facing * dash_speed, 0.0, 0.0)

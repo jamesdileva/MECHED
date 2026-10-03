@@ -5,6 +5,28 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-02 — S08 · First Mobility Mech (Strider)
+
+**Scope (planned):** per roadmap S08 — prove that different mobility models change gameplay, and make mech identity data-driven (AGENTS rule: mechs are Resources, never hardcoded). `MechDefinition` Resource (display_name, max_health, mass, max_speed, acceleration, jump_velocity, dash_speed, dash_cost) + two `.tres` files in `data/mechs/`: **Standard** (100hp, mass 1.2, speed 8, no dash) and **Strider** (70hp, mass 0.8, speed 11, accel 48, dash 13 m/s for 25 energy). `mech.apply_definition()` pushes stats into the body/movement controller (works on detached instances so it is testable headless); MatchController.setup applies definitions and uses display names as entity keys (HUD shows Strider/Standard). The **player becomes the Strider** this sprint so dash is feel-testable, and the dummy takes the Standard chassis — the mobility contrast is observable directly: dash burst, higher top speed, lighter mass = noticeably farther knockback. Dash: grounded-only burst along facing, edge-triggered on the dash action, energy-gated via new TurnManager `spend_dash(actor, cost)` (refused when unaffordable or for dash-less chassis). Global jump cost kept (per-mech energy/jump-cost tuning deferred to the S10 archetype pass). Wraith (jetpack) and Bastion follow in S09/S10 to complete the three archetypes before the user's next batched playtest.
+
+**Done:**
+
+- `scripts/mechs/mech_definition.gd` + `data/mechs/standard_mech.tres` / `strider.tres` — chassis stats as data. Standard: 100hp / 1.2 mass / 8 m/s / no dash. Strider: 70hp / 0.8 mass / 11 m·s / accel 48 / dash 13 m·s for 25 energy.
+- `mech.apply_definition()` pushes stats into body + movement controller (get_node_or_null → testable on detached instances); `can_dash()`/`dash_cost()`/`display_name()` accessors; grounded dash burst consumed from `want_dash` intent.
+- TurnManager `spend_dash(actor, cost)` — energy-gated, active-entity validated, amount from the definition so the manager stays definition-agnostic.
+- MatchController.setup applies definitions and keys entities by display name (MatchState health init per definition max_health; damage keyed by display name; HUD shows Strider/Standard). Player drives the Strider this sprint; the dummy takes the Standard chassis.
+- main.tscn wires the two definitions as ext_resources on the mech instances.
+
+**Verification (roadmap S08 checklist):**
+
+- Tests **63/63 passed** — 4 new definition tests (resources load, archetypes differ as designed — faster/lighter/low-armor/dashing, stats push into the body incl. dash gating by chassis, dash velocity mirrors facing) + 2 dash-economy tests (energy chunk spent; refused when unaffordable or inactive). All prior suites green; import/smoke exit 0.
+- Manual (next batch): dash feel (Shift/X burst, 25 energy visible in HUD), Strider speed vs the old Standard feel, Strider knocked noticeably farther than the heavier Standard dummy, HUD names.
+- Known deferral: per-mech energy pools / jump costs arrive with the S10 archetype pass if tuning asks for them.
+
+**Next:** S09 — Jetpack Mech (Wraith: limited fuel, aerial movement, hover — the design's riskiest mobility question: interesting or overpowered?).
+
+---
+
 ## 2026-10-02 — S07.1 · Playtest fix batch
 
 **Scope (planned):** batch playtest found: (1) self-knockback on every shot — the projectile body entered the physics space at the scene origin (inside the terrain, under the shooter) for one frame before being moved to the muzzle, so it detonated at the shooter's feet on spawn; (2) slow-feeling turns — missed shells that fly off the map hold the turn in RESOLVING for their full 8s lifetime, and the dummy idles the full 15s timer; (3) cannot aim low enough to blast one's own feet; (4) mild performance lag (unprofiled). Fixes: projectile transform set before add_child + 0.15s shooter-ignoring grace; shells resolve instantly on leaving the battlefield bounds; the placeholder dummy passes its turn after ~1.5s (real AI is S15+); barrel clamp widened to −10°..90° (ballistics clamp updated to match); directional shadow mode PSSM4→PSSM2 as a cheap render win. FPS still lagging → user will report the HUD number for a deeper dig.

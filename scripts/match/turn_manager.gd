@@ -83,6 +83,17 @@ func spend_jump(actor_index: int) -> bool:
 	return true
 
 
+## Dash burst cost (S08) — the amount comes from the mech's definition, since
+## the turn manager stays definition-agnostic.
+func spend_dash(actor_index: int, cost: float) -> bool:
+	if actor_index != state.active_index or not state.can_move():
+		return false
+	if state.movement_energy_left < cost:
+		return false
+	state.movement_energy_left -= cost
+	return true
+
+
 func end_turn(actor_index: int) -> void:
 	if not state.started or actor_index != state.active_index:
 		return

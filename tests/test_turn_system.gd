@@ -122,6 +122,21 @@ func test_jump_refused_when_unaffordable() -> void:
 	assert_true(tm.spend_movement(0, 5.0), "walking on the remainder still works")
 
 
+func test_dash_spends_energy() -> void:
+	var tm = _begin()
+	assert_true(tm.spend_dash(0, 25.0), "dash is affordable at full energy")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 25.0,
+			"dash costs its energy chunk")
+
+
+func test_dash_refused_when_unaffordable_or_inactive() -> void:
+	var tm = _begin()
+	assert_true(tm.spend_dash(1, 25.0) == false, "non-active entity cannot dash")
+	assert_true(tm.spend_dash(0, tm.ENERGY_PER_TURN + 1.0) == false,
+			"dash refused when the cost exceeds remaining energy")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "failed dashes cost nothing")
+
+
 func test_fire_action_starts_resolution() -> void:
 	var tm = _begin()
 	assert_true(_fire(tm, 0), "active entity may fire")

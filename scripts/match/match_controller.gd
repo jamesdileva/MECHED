@@ -39,15 +39,22 @@ var terrain = null
 
 ## Wires the entity list (index = turn order) and begins the match.
 ## Plain-Array parameter so callers can pass [$A, $B] node literals directly.
+## Definitions (if assigned) are applied first and their display names become
+## the entity keys used by MatchState and the HUD.
 func setup(p_entities: Array) -> void:
 	entities.assign(p_entities)
 	turn_manager = TurnManagerScript.new()
 	var names := PackedStringArray()
 	for entity in entities:
-		names.append(String(entity.name))
+		entity.apply_definition(entity.definition)
+		names.append(String(entity.display_name()))
 	turn_manager.begin_match(names)
 	for entity in entities:
-		entity.sync_health(turn_manager.state.entity_health(String(entity.name)))
+		var entity_name := String(entity.display_name())
+		var max_health: float = entity.definition.max_health \
+				if entity.definition != null else turn_manager.state.STARTING_HEALTH
+		turn_manager.state.set_entity_health(entity_name, max_health)
+		entity.sync_health(max_health)
 	add_to_group("match_controller")
 
 
@@ -69,6 +76,7 @@ func _physics_process(delta: float) -> void:
 func _zero_intent(mech) -> void:
 	mech.move_axis = 0.0
 	mech.want_jump = false
+	mech.want_dash = false
 	mech.aim_axis = 0.0
 	mech.charge = 0.0
 
@@ -99,6 +107,13 @@ func _drive_player(mech, index: int, delta: float) -> void:
 			and InputLayer.is_action_just_pressed("jump")
 			and mech.is_on_floor()
 			and turn_manager.spend_jump(index))
+	# Dash burst (S08): grounded, edge-triggered, energy-gated; dash-less
+	# chassis refuse it in can_dash().
+	mech.want_dash = (may_move
+			and InputLayer.is_action_just_pressed("dash")
+			and mech.is_on_floor()
+			and mech.can_dash()
+			and turn_manager.spend_dash(index, mech.dash_cost()))
 
 	if in_move_phase:
 		if InputLayer.is_action_pressed("fire"):
@@ -171,7 +186,7 @@ func _resolve_impact(position: Vector3) -> void:
 
 ## MatchState.mech_health is the source of truth; the mech node gets a mirror.
 func _apply_damage(mech: Node, amount: float) -> void:
-	var entity_name := String(mech.name)
+	var entity_name := String(mech.display_name())
 	var new_health: float = turn_manager.state.apply_damage(entity_name, amount)
 	mech.sync_health(new_health)
 

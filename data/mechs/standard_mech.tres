@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Standard"
+max_health = 100.0
+mass = 1.2
+max_speed = 8.0
+acceleration = 40.0
+jump_velocity = 10.0
+dash_speed = 0.0
+dash_cost = 25.0
