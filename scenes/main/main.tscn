@@ -27,6 +27,7 @@ environment = SubResource("Env1")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation = Vector3(-0.9, -0.6, 0)
 shadow_enabled = true
+directional_shadow_mode = 1
 
 [node name="Battlefield" parent="." instance=ExtResource("2_bf")]
 

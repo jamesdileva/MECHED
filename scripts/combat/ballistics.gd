@@ -9,6 +9,7 @@ extends RefCounted
 const MATCH_GRAVITY := 30.0
 const MIN_SPEED := 8.0
 const MAX_SPEED := 30.0
+const MIN_ANGLE_DEG := -10.0
 const EXPLOSION_RADIUS := 2.5
 const DIRECT_HIT_RADIUS := 0.75
 const MAX_DAMAGE := 40.0
@@ -18,10 +19,12 @@ static func speed_for_power(power: float) -> float:
 	return lerpf(MIN_SPEED, MAX_SPEED, clampf(power, 0.0, 1.0))
 
 
-## Side-plane launch vector: angle in degrees above the horizon, toward the
-## facing sign (mirrors x). Matches the mech's AimPivot rotation convention.
+## Side-plane launch vector: angle in degrees relative to the horizon
+## (−10..90 — slightly below horizon lets a mech blast the ground at its own
+## feet), toward the facing sign (mirrors x). Matches the mech's AimPivot
+## rotation convention.
 static func launch_velocity(angle_deg: float, facing: float, power: float) -> Vector3:
-	var a := deg_to_rad(clampf(angle_deg, 0.0, 90.0))
+	var a := deg_to_rad(clampf(angle_deg, MIN_ANGLE_DEG, 90.0))
 	return Vector3(facing * cos(a), sin(a), 0.0) * speed_for_power(power)
 
 

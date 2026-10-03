@@ -5,6 +5,12 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-02 — S07.1 · Playtest fix batch
+
+**Scope (planned):** batch playtest found: (1) self-knockback on every shot — the projectile body entered the physics space at the scene origin (inside the terrain, under the shooter) for one frame before being moved to the muzzle, so it detonated at the shooter's feet on spawn; (2) slow-feeling turns — missed shells that fly off the map hold the turn in RESOLVING for their full 8s lifetime, and the dummy idles the full 15s timer; (3) cannot aim low enough to blast one's own feet; (4) mild performance lag (unprofiled). Fixes: projectile transform set before add_child + 0.15s shooter-ignoring grace; shells resolve instantly on leaving the battlefield bounds; the placeholder dummy passes its turn after ~1.5s (real AI is S15+); barrel clamp widened to −10°..90° (ballistics clamp updated to match); directional shadow mode PSSM4→PSSM2 as a cheap render win. FPS still lagging → user will report the HUD number for a deeper dig.
+
+---
+
 ## 2026-10-02 — S07 · Movement Energy
 
 **Scope (planned):** per roadmap S07 — the first major departure from GunBound: movement becomes a strategic resource. The S03 time budget (3.0s) is replaced by an energy economy matching the roadmap example: **100 energy per turn, walk = 1 per meter, jump = 10** (dash arrives with the first mobility mech in S08 — it has no mechanic to cost yet). Design decisions: (1) consumption uses *requested* distance (`|axis| × max_speed × dt`), not actual displacement — charging players for being knocked back would punish them for enemy plays; (2) energy is authoritative in MatchState (`movement_energy_left` replaces the time budget), spent via TurnManager `spend_movement`/`spend_jump` with active-entity validation; (3) a jump you cannot afford (energy < 10) is refused by the simulation — end-of-budget decisions become real tradeoffs; (4) partial budgets still walk (energy > 0 means you can move). HUD turn line shows energy; turns refill to 100 on transition (regain-on-future-turns verification).

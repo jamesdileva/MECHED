@@ -16,7 +16,7 @@ extends CharacterBody3D
 const KILL_PLANE_Y := -10.0
 const FACING_DEADZONE := 0.1
 const AIM_SPEED_DEG := 70.0
-const AIM_MIN_DEG := 0.0
+const AIM_MIN_DEG := -10.0
 const AIM_MAX_DEG := 90.0
 
 ## Driver intent, set externally each physics tick by the match layer.

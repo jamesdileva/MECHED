@@ -38,6 +38,14 @@ func test_launch_velocity_clamps_extreme_angles() -> void:
 	assert_almost_equal(over.x, 0.0, EPS, "angles clamp to 90")
 
 
+func test_below_horizon_angles_aim_at_own_feet() -> void:
+	var b = load(BALLISTICS)
+	var down: Vector3 = b.launch_velocity(b.MIN_ANGLE_DEG, 1.0, 0.5)
+	assert_true(down.y < 0.0, "-10 degrees fires downward")
+	var clamped: Vector3 = b.launch_velocity(-30.0, 1.0, 0.5)
+	assert_almost_equal(clamped.y, down.y, EPS, "angles clamp at the lower bound")
+
+
 func test_time_of_flight_matches_analytic_drop() -> void:
 	var b = load(BALLISTICS)
 	var t: float = b.time_of_flight(Vector3(0, 1, 0), Vector3.ZERO)

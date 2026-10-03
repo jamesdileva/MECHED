@@ -24,11 +24,14 @@ const PROJECTILE_SCENE := preload("res://scenes/projectiles/projectile.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
 
 const CHARGE_TIME := 1.2
+## Placeholder AI think time before passing (S15 replaces this driver).
+const DUMMY_TURN_DELAY := 1.5
 
 @export var player_index := 0
 
 var turn_manager
 var entities: Array[Node] = []
+var _dummy_wait := 0.0
 ## Destructible terrain (terrain_system.gd), wired by Main. Craters are carved
 ## at every projectile impact before the turn resolves.
 var terrain = null
@@ -55,13 +58,29 @@ func _physics_process(delta: float) -> void:
 	var active: int = turn_manager.state.active_index
 	for i in entities.size():
 		var mech = entities[i]
-		if i == active and i == player_index:
+		if i != active:
+			_zero_intent(mech)
+		elif i == player_index:
 			_drive_player(mech, i, delta)
 		else:
-			mech.move_axis = 0.0
-			mech.want_jump = false
-			mech.aim_axis = 0.0
-			mech.charge = 0.0
+			_drive_dummy(mech, i, delta)
+
+
+func _zero_intent(mech) -> void:
+	mech.move_axis = 0.0
+	mech.want_jump = false
+	mech.aim_axis = 0.0
+	mech.charge = 0.0
+
+
+## Placeholder opponent (real AI is S15+): no movement, brief pause, pass.
+func _drive_dummy(mech, _index: int, delta: float) -> void:
+	_zero_intent(mech)
+	_dummy_wait += delta
+	if _dummy_wait >= DUMMY_TURN_DELAY:
+		_dummy_wait = 0.0
+		turn_manager.submit_action(EndTurnAction.new(),
+				turn_manager.state.active_index)
 
 
 func _drive_player(mech, index: int, delta: float) -> void:
@@ -97,9 +116,13 @@ func _drive_player(mech, index: int, delta: float) -> void:
 
 func _spawn_projectile(mech, power: float) -> void:
 	var projectile = PROJECTILE_SCENE.instantiate()
-	get_tree().current_scene.add_child(projectile)
 	var muzzle: Node3D = mech.get_node("Visual/AimPivot/Muzzle")
-	projectile.global_position = muzzle.global_position
+	# Set the transform BEFORE the body enters the physics space: a body added
+	# at the origin registers one frame inside the terrain (the origin is
+	# underground) and detonates at the shooter's feet.
+	projectile.position = muzzle.global_position
+	projectile.set_shooter(mech)
+	get_tree().current_scene.add_child(projectile)
 	projectile.launch(Ballistics.launch_velocity(mech.aim_angle, mech.facing(), power))
 	projectile.exploded.connect(_on_projectile_exploded, CONNECT_ONE_SHOT)
 

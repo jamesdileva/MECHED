@@ -6,11 +6,16 @@ extends RigidBody3D
 
 signal exploded(position: Vector3)
 
+## Grace window during which the shell ignores its shooter — muzzle grazes
+## (steep aim angles) must not detonate on the barrel that fired them.
+const SHOOTER_GRACE := 0.15
+
 @export var match_gravity := 30.0
 @export var max_lifetime := 8.0
 
 var _age := 0.0
 var _done := false
+var _shooter: Node = null
 
 
 func _ready() -> void:
@@ -23,14 +28,29 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age >= max_lifetime:
 		_explode()
+	elif _is_out_of_bounds():
+		# A shell that leaves the battlefield must not hold the turn in
+		# resolution for its whole lifetime.
+		_explode()
 
 
 func launch(velocity: Vector3) -> void:
 	linear_velocity = velocity
 
 
-func _on_body_entered(_body: Node) -> void:
+func set_shooter(shooter: Node) -> void:
+	_shooter = shooter
+
+
+func _on_body_entered(body: Node) -> void:
+	if body == _shooter and _age < SHOOTER_GRACE:
+		return
 	_explode()
+
+
+func _is_out_of_bounds() -> bool:
+	return absf(global_position.x) > 45.0 or global_position.y > 30.0 \
+			or global_position.y < -15.0
 
 
 func _explode() -> void:
