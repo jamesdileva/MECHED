@@ -1,23 +1,27 @@
 extends RefCounted
 ## Turn logic (implementation-guide §4): determines the active entity, begins
-## and ends turns, budgets movement, enforces turn validity, and owns the
-## move→resolving phase transition when a FireAction lands. Carries no weapon
-## or AI logic (§4) — discrete actions arrive via submit_action(), continuous
-## movement intent via apply_movement(); both come from any driver (the player
-## input shim today, the AI planner in S15+).
+## and ends turns, budgets movement energy, enforces turn validity, and owns
+## the move→resolving phase transition when a FireAction lands. Carries no
+## weapon or AI logic (§4) — discrete actions arrive via submit_action(),
+## movement spending via spend_movement/spend_jump; both come from any driver
+## (the player input shim today, the AI planner in S15+).
 
 const MatchStateScript := preload("res://scripts/match/match_state.gd")
 const EndTurnAction := preload("res://scripts/match/action_end_turn.gd")
 const FireAction := preload("res://scripts/match/action_fire.gd")
 
 const TURN_TIME := 15.0
-const MOVE_BUDGET := 3.0
+## Movement economy (S07, roadmap example): walking costs per meter, jumping
+## a flat chunk. Dash joins with the first mobility mech (S08).
+const ENERGY_PER_TURN := 100.0
+const WALK_COST_PER_M := 1.0
+const JUMP_COST := 10.0
 
 var state := MatchStateScript.new()
 
 
 func begin_match(entity_names: PackedStringArray) -> void:
-	state.begin_match(entity_names, MOVE_BUDGET, TURN_TIME)
+	state.begin_match(entity_names, ENERGY_PER_TURN, TURN_TIME)
 
 
 ## Per-tick turn progression. The turn timer is the fallback that guarantees
@@ -57,15 +61,26 @@ func finish_resolution() -> void:
 		end_turn(state.active_index)
 
 
-## Continuous movement intent from the active driver. Returns the effective
-## axis (0.0 when this entity may not move now) and consumes the movement
-## budget proportional to |axis| * delta. The final consuming tick may move a
-## hair past the budget — frame granularity, accepted.
-func apply_movement(actor_index: int, axis: float, delta: float) -> float:
+## Walk spending. `meters` is the requested distance (|axis| × max_speed × dt
+## — requested, not displaced, so being knocked back never costs the victim).
+## Returns whether movement is permitted; the driver zeroes its axis when it
+## is not.
+func spend_movement(actor_index: int, meters: float) -> bool:
 	if actor_index != state.active_index or not state.can_move():
-		return 0.0
-	state.movement_budget_left = maxf(0.0, state.movement_budget_left - absf(axis) * delta)
-	return axis
+		return false
+	state.movement_energy_left = maxf(
+			0.0, state.movement_energy_left - meters * WALK_COST_PER_M)
+	return true
+
+
+## Flat jump cost. Returns false (and refuses the jump) when unaffordable.
+func spend_jump(actor_index: int) -> bool:
+	if actor_index != state.active_index or not state.can_move():
+		return false
+	if state.movement_energy_left < JUMP_COST:
+		return false
+	state.movement_energy_left -= JUMP_COST
+	return true
 
 
 func end_turn(actor_index: int) -> void:
@@ -74,5 +89,5 @@ func end_turn(actor_index: int) -> void:
 	state.active_index = (state.active_index + 1) % state.entity_names.size()
 	state.turn_number += 1
 	state.phase = MatchStateScript.Phase.MOVE
-	state.movement_budget_left = MOVE_BUDGET
+	state.movement_energy_left = ENERGY_PER_TURN
 	state.turn_time_left = TURN_TIME

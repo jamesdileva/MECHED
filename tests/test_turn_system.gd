@@ -32,7 +32,7 @@ func test_begin_match_activates_first_entity() -> void:
 	assert_equal(s.active_index, 0, "first entity is active")
 	assert_equal(s.turn_number, 1, "turn numbering starts at 1")
 	assert_true(s.is_in_move_phase(), "turn opens in the move phase")
-	assert_equal(s.movement_budget_left, tm.MOVE_BUDGET, "movement budget is full")
+	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "movement energy is full")
 	assert_equal(s.turn_time_left, tm.TURN_TIME, "turn timer is full")
 
 
@@ -44,7 +44,7 @@ func test_end_turn_action_advances_and_resets() -> void:
 	assert_equal(s.active_index, 1, "play passes to the next entity")
 	assert_equal(s.turn_number, 2, "turn number increments")
 	assert_true(s.is_in_move_phase(), "next turn opens in the move phase")
-	assert_equal(s.movement_budget_left, tm.MOVE_BUDGET, "budget refreshed")
+	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "energy refreshed")
 	assert_equal(s.turn_time_left, tm.TURN_TIME, "timer refreshed")
 
 
@@ -77,32 +77,49 @@ func test_tick_before_match_begin_is_noop() -> void:
 	assert_equal(tm.state.active_index, -1, "nothing active before begin_match")
 
 
-func test_movement_budget_consumes_only_when_moving() -> void:
+func test_walking_spends_energy_per_meter() -> void:
 	var tm = _begin()
-	var axis: float = tm.apply_movement(0, 0.0, 0.5)
-	assert_equal(axis, 0.0, "zero axis stays zero")
-	assert_equal(tm.state.movement_budget_left, tm.MOVE_BUDGET, "standing still costs nothing")
-	axis = tm.apply_movement(0, 1.0, 0.5)
-	assert_equal(axis, 1.0, "allowed axis passes through unchanged")
-	assert_equal(tm.state.movement_budget_left, tm.MOVE_BUDGET - 0.5, "moving consumes budget")
+	assert_true(tm.spend_movement(0, 0.0), "standing still is permitted and free")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "zero distance costs nothing")
+	assert_true(tm.spend_movement(0, 5.0), "walking is permitted")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 5.0,
+			"walk costs 1 energy per meter")
 
 
 func test_non_active_actor_cannot_move() -> void:
 	var tm = _begin()
-	var axis: float = tm.apply_movement(1, 1.0, 0.5)
-	assert_equal(axis, 0.0, "movement during another entity's turn is suppressed")
-	assert_equal(tm.state.movement_budget_left, tm.MOVE_BUDGET, "no budget consumed")
+	assert_true(tm.spend_movement(1, 5.0) == false, "movement during another turn is refused")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "no energy spent")
 
 
-func test_exhausted_budget_stops_movement_without_ending_turn() -> void:
+func test_exhausted_energy_stops_movement_without_ending_turn() -> void:
 	var tm = _begin()
-	var steps := int(ceil(tm.MOVE_BUDGET / 0.1)) + 1
-	for i in steps:
-		tm.apply_movement(0, 1.0, 0.1)
-	assert_equal(tm.state.movement_budget_left, 0.0, "budget drains to zero")
-	assert_equal(tm.apply_movement(0, 1.0, 0.1), 0.0, "empty budget suppresses movement")
-	assert_equal(tm.state.active_index, 0, "empty budget does not auto-end the turn")
-	assert_true(tm.state.can_move() == false, "can_move is false on an empty budget")
+	for i in 10:
+		tm.spend_movement(0, 10.0)
+	assert_equal(tm.state.movement_energy_left, 0.0, "energy drains to zero")
+	assert_true(tm.spend_movement(0, 1.0) == false, "empty energy refuses movement")
+	assert_equal(tm.state.active_index, 0, "empty energy does not auto-end the turn")
+	assert_true(tm.state.can_move() == false, "can_move is false on empty energy")
+
+
+func test_jump_costs_flat_energy() -> void:
+	var tm = _begin()
+	assert_true(tm.spend_jump(0), "jump is affordable at full energy")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - tm.JUMP_COST,
+			"jump costs its flat chunk")
+	assert_true(tm.spend_jump(0), "a second jump also works (and costs again)")
+	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 2 * tm.JUMP_COST,
+			"jumps stack their cost")
+
+
+func test_jump_refused_when_unaffordable() -> void:
+	var tm = _begin()
+	for i in 10:
+		tm.spend_movement(0, 9.5)
+	# 100 - 95 = 5 energy left: walkable, but below the jump cost.
+	assert_equal(tm.state.movement_energy_left, 5.0, "5 energy remains")
+	assert_true(tm.spend_jump(0) == false, "jump refused below its cost")
+	assert_true(tm.spend_movement(0, 5.0), "walking on the remainder still works")
 
 
 func test_fire_action_starts_resolution() -> void:
@@ -117,7 +134,7 @@ func test_cannot_act_again_while_resolving() -> void:
 	var tm = _begin()
 	_fire(tm, 0)
 	assert_true(_fire(tm, 0) == false, "double fire is rejected")
-	assert_equal(tm.apply_movement(0, 1.0, 0.5), 0.0, "movement is locked while resolving")
+	assert_true(tm.spend_movement(0, 1.0) == false, "movement is locked while resolving")
 	assert_true(tm.submit_action(load(END_TURN_ACTION).new(), 0) == false,
 			"end turn is locked while resolving")
 	tm.tick(20.0)
@@ -133,7 +150,7 @@ func test_finish_resolution_advances_turn() -> void:
 	assert_equal(s.active_index, 1, "resolved shot passes play on")
 	assert_equal(s.turn_number, 2, "next turn is numbered")
 	assert_true(s.is_in_move_phase(), "next turn opens in the move phase")
-	assert_equal(s.movement_budget_left, tm.MOVE_BUDGET, "budget refreshed")
+	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "energy refreshed")
 
 
 func test_damage_is_tracked_in_match_state() -> void:

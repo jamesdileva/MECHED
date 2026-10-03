@@ -17,19 +17,19 @@ var turn_number := 0
 var entity_names: PackedStringArray = []
 var active_index := -1
 var phase: int = Phase.INACTIVE
-var movement_budget_left := 0.0
+var movement_energy_left := 0.0
 var turn_time_left := 0.0
 var mech_health: Dictionary = {}
 var match_result := &""
 
 
-func begin_match(names: PackedStringArray, budget: float, turn_time: float) -> void:
+func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: float) -> void:
 	started = true
 	turn_number = 1
 	entity_names = names
 	active_index = 0
 	phase = Phase.MOVE
-	movement_budget_left = budget
+	movement_energy_left = energy_per_turn
 	turn_time_left = turn_time
 	mech_health.clear()
 	for entity_name in names:
@@ -54,9 +54,9 @@ func is_resolving() -> bool:
 	return started and phase == Phase.RESOLVING
 
 
-## The active entity may move while the turn's movement budget lasts.
+## The active entity may move while the turn's movement energy lasts.
 func can_move() -> bool:
-	return is_in_move_phase() and movement_budget_left > 0.0
+	return is_in_move_phase() and movement_energy_left > 0.0
 
 
 ## Authoritative health mutation. Returns the new health (clamped at 0).

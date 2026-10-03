@@ -66,12 +66,20 @@ func _physics_process(delta: float) -> void:
 
 func _drive_player(mech, index: int, delta: float) -> void:
 	mech.aim_axis = InputLayer.get_aim_axis()
-	mech.move_axis = turn_manager.apply_movement(index, InputLayer.get_move_axis(), delta)
-	# Movement intents are move-phase only; the turn manager double-checks
-	# apply_movement/submit_action, but the mech must never even see a jump
-	# or a charging barrel while a shell is in flight.
+	# Movement intents are move-phase only and stop when energy runs out.
+	# Fire/end-turn stay available on an empty energy bar.
 	var in_move_phase: bool = turn_manager.state.is_in_move_phase()
-	mech.want_jump = in_move_phase and InputLayer.is_action_just_pressed("jump")
+	var may_move: bool = turn_manager.state.can_move()
+	mech.move_axis = InputLayer.get_move_axis() if may_move else 0.0
+	# Requested distance (|axis| × max_speed × dt), never actual displacement —
+	# a mech knocked back by a blast must not pay energy for it.
+	if may_move:
+		turn_manager.spend_movement(index, absf(mech.move_axis) * mech.max_speed() * delta)
+	# Jump costs energy and is refused by the simulation when unaffordable.
+	mech.want_jump = (may_move
+			and InputLayer.is_action_just_pressed("jump")
+			and mech.is_on_floor()
+			and turn_manager.spend_jump(index))
 
 	if in_move_phase:
 		if InputLayer.is_action_pressed("fire"):
@@ -151,6 +159,6 @@ func status_line() -> String:
 	var s = turn_manager.state
 	if s.is_resolving():
 		return "turn %d | %s | resolving" % [s.turn_number, s.active_entity_name()]
-	return "turn %d | %s | move %.1fs | timer %.1fs" % [
-		s.turn_number, s.active_entity_name(), s.movement_budget_left, s.turn_time_left,
+	return "turn %d | %s | energy %.0f | timer %.1fs" % [
+		s.turn_number, s.active_entity_name(), s.movement_energy_left, s.turn_time_left,
 	]

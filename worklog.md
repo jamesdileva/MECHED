@@ -5,6 +5,29 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-02 — S07 · Movement Energy
+
+**Scope (planned):** per roadmap S07 — the first major departure from GunBound: movement becomes a strategic resource. The S03 time budget (3.0s) is replaced by an energy economy matching the roadmap example: **100 energy per turn, walk = 1 per meter, jump = 10** (dash arrives with the first mobility mech in S08 — it has no mechanic to cost yet). Design decisions: (1) consumption uses *requested* distance (`|axis| × max_speed × dt`), not actual displacement — charging players for being knocked back would punish them for enemy plays; (2) energy is authoritative in MatchState (`movement_energy_left` replaces the time budget), spent via TurnManager `spend_movement`/`spend_jump` with active-entity validation; (3) a jump you cannot afford (energy < 10) is refused by the simulation — end-of-budget decisions become real tradeoffs; (4) partial budgets still walk (energy > 0 means you can move). HUD turn line shows energy; turns refill to 100 on transition (regain-on-future-turns verification).
+
+**Done:**
+
+- MatchState: `movement_budget_left` (seconds) → `movement_energy_left` (points); `begin_match` signature renamed accordingly; `can_move()` = move phase + energy > 0.
+- TurnManager: consts `ENERGY_PER_TURN` (100), `WALK_COST_PER_M` (1.0), `JUMP_COST` (10); `spend_movement(actor, meters)` (requested distance) and `spend_jump(actor)` (refused when energy < cost) with active-entity validation; end-turn refills energy.
+- MatchController: axis gated on `can_move()`; walk spending = |axis| × mech.max_speed() × dt (requested, not displaced — knockback never costs the victim); jump intent additionally requires `is_on_floor()` and passes the `spend_jump` gate. Fire/end-turn remain available on an empty energy bar (roadmap verification: stop moving, then fire).
+- mech.gd: `max_speed()` accessor for the match layer's accounting. HUD turn line shows `energy N`.
+- Test-harness observation: two S03-era tests still calling the removed `apply_movement` crashed mid-test and were silently "passed" — the zero-assertion tripwire only catches crashes before the first assert (known documented gap). Both tests updated to the energy API.
+
+**Verification (roadmap S07 checklist):**
+
+- Move ✓ (mechanism unchanged), spend energy ✓ (`test_walking_spends_energy_per_meter`), stop moving ✓ (`test_exhausted_energy_stops_movement_without_ending_turn`), fire on empty energy ✓ (gate separation in the move-phase block), regain next turn ✓ (`test_end_turn_action_advances_and_resets` energy refresh).
+- Jump economy: flat 10, stackable, refused when unaffordable — three dedicated tests.
+- `--import` exit 0; `--quit` smoke exit 0; tests **56/56 passed**; CI green.
+- Still manual (batched): watch energy drain while walking, jump's visible 10-point chunk, refused jump at <10 energy, refill on turn pass.
+
+**Next:** S08 — First Mobility Mech (Strider: high movement, low armor, dash — the first data-driven MechDefinition and the dash mechanic whose cost the S07 economy reserved).
+
+---
+
 ## 2026-10-02 — S05.1 · Spawn-under-terrain fix
 
 **Scope (planned):** batch playtest found the player mech embedded inside the terrain at match start. Root cause: the Mech instance sat at scene origin (0,0,0) — inside the ground slab — since S02, but the old convex box ground depenetrated the overlap silently; S05's concave trimesh terrain can't depenetrate an embedded body, so the mech stayed stuck (destroying the surrounding cells freed it, matching the report). Fix: the instance now spawns at its respawn point (0, 3, 0) like the DummyMech already did; scene placement stays authoritative over mech.gd. Platforms not destructing is expected — they are plain StaticBody3D structures until the destructibles sprint (S13). Terrain carving, surface change, and repeated destruction verified working by the same playtest.

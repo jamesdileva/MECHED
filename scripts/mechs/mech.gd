@@ -68,6 +68,12 @@ func facing() -> float:
 	return -1.0 if _visual.rotation.y > PI * 0.5 else 1.0
 
 
+## Walk-speed reference for the match layer's energy accounting (the controller
+## spends requested distance = |axis| × this × dt).
+func max_speed() -> float:
+	return _movement.max_speed
+
+
 func sync_health(value: float) -> void:
 	health = value
 
