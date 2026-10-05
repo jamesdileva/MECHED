@@ -94,6 +94,19 @@ func spend_dash(actor_index: int, cost: float) -> bool:
 	return true
 
 
+## Jetpack fuel burn (S09) — the tick's worth of fuel comes from the mech's
+## definition. Refusing the spend is the driver's signal to cut thrust.
+func spend_fuel(actor_index: int, amount: float) -> bool:
+	if actor_index != state.active_index:
+		return false
+	var entity_name := state.active_entity_name()
+	var fuel: float = state.entity_fuel(entity_name)
+	if fuel < amount:
+		return false
+	state.jetpack_fuel[entity_name] = fuel - amount
+	return true
+
+
 func end_turn(actor_index: int) -> void:
 	if not state.started or actor_index != state.active_index:
 		return
@@ -102,3 +115,4 @@ func end_turn(actor_index: int) -> void:
 	state.phase = MatchStateScript.Phase.MOVE
 	state.movement_energy_left = ENERGY_PER_TURN
 	state.turn_time_left = TURN_TIME
+	state.refill_fuel(state.active_entity_name())

@@ -25,6 +25,7 @@ const AIM_MAX_DEG := 90.0
 var move_axis := 0.0
 var want_jump := false
 var want_dash := false
+var want_thrust := false
 var aim_axis := 0.0
 var charge := 0.0
 
@@ -51,7 +52,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	aim_angle = clampf(aim_angle - aim_axis * AIM_SPEED_DEG * delta, AIM_MIN_DEG, AIM_MAX_DEG)
 	_aim_pivot.rotation.z = deg_to_rad(aim_angle)
-	velocity = _movement.compute_velocity(velocity, move_axis, want_jump, is_on_floor(), delta)
+	velocity = _movement.compute_velocity(velocity, move_axis, want_jump, want_thrust,
+			is_on_floor(), delta)
 	if want_dash:
 		want_dash = false
 		if is_on_floor() and can_dash():
@@ -77,6 +79,7 @@ func apply_definition(def: Resource) -> void:
 		mv.acceleration = def.acceleration
 		mv.jump_velocity = def.jump_velocity
 		mv.dash_speed = def.dash_speed
+		mv.thrust_accel = def.jetpack_thrust if def.jetpack_fuel > 0.0 else 0.0
 
 
 func can_dash() -> bool:
@@ -85,6 +88,14 @@ func can_dash() -> bool:
 
 func dash_cost() -> float:
 	return _definition.dash_cost if _definition != null else 25.0
+
+
+func can_thrust() -> bool:
+	return _definition != null and _definition.jetpack_fuel > 0.0
+
+
+func fuel_burn() -> float:
+	return _definition.jetpack_burn if _definition != null else 0.0
 
 
 func display_name() -> String:

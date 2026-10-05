@@ -15,6 +15,9 @@ extends Node
 @export var gravity := 30.0
 ## Grounded dash burst speed (S08); 0 when the chassis has no dash.
 @export var dash_speed := 12.0
+## Jetpack net upward acceleration while thrusting (S09); 0 = no jetpack.
+## Values above `gravity` climb, equal to `gravity` hovers.
+@export var thrust_accel := 0.0
 
 @export var bounds_min_x := -27.0
 @export var bounds_max_x := 27.0
@@ -30,11 +33,13 @@ extends Node
 ## toward the axis target. The floor branch only ever RAISES vertical velocity
 ## (jump), never zeroes it, so launches from blasts are not wiped on the next
 ## tick; a resting mech's velocity settles to zero through move_and_slide.
-func compute_velocity(current: Vector3, axis: float, jump: bool, on_floor: bool,
-		delta: float) -> Vector3:
+func compute_velocity(current: Vector3, axis: float, jump: bool, thrust: bool,
+		on_floor: bool, delta: float) -> Vector3:
 	var v := current
 	if not on_floor:
 		v.y -= gravity * delta
+		if thrust:
+			v.y += thrust_accel * delta
 	elif jump:
 		v.y = maxf(v.y, jump_velocity)
 	v.x = move_toward(v.x, axis * max_speed, acceleration * delta)

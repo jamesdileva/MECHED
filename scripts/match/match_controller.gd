@@ -55,6 +55,8 @@ func setup(p_entities: Array) -> void:
 				if entity.definition != null else turn_manager.state.STARTING_HEALTH
 		turn_manager.state.set_entity_health(entity_name, max_health)
 		entity.sync_health(max_health)
+		if entity.definition != null and entity.definition.jetpack_fuel > 0.0:
+			turn_manager.state.set_fuel_limit(entity_name, entity.definition.jetpack_fuel)
 	add_to_group("match_controller")
 
 
@@ -77,6 +79,7 @@ func _zero_intent(mech) -> void:
 	mech.move_axis = 0.0
 	mech.want_jump = false
 	mech.want_dash = false
+	mech.want_thrust = false
 	mech.aim_axis = 0.0
 	mech.charge = 0.0
 
@@ -114,6 +117,13 @@ func _drive_player(mech, index: int, delta: float) -> void:
 			and mech.is_on_floor()
 			and mech.can_dash()
 			and turn_manager.spend_dash(index, mech.dash_cost()))
+	# Jetpack (S09): hold jump while airborne to thrust. Fuel drains per tick
+	# through the turn manager; a refused spend cuts thrust (empty tank).
+	mech.want_thrust = (may_move
+			and not mech.is_on_floor()
+			and InputLayer.is_action_pressed("jump")
+			and mech.can_thrust()
+			and turn_manager.spend_fuel(index, mech.fuel_burn() * delta))
 
 	if in_move_phase:
 		if InputLayer.is_action_pressed("fire"):

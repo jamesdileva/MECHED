@@ -23,7 +23,7 @@ func test_mech_scene_structure() -> void:
 func test_accelerates_toward_axis_on_floor() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 1.0, false, true, 1.0 / 60.0)
+	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 1.0, false, false, true, 1.0 / 60.0)
 	assert_true(v.x > 0.0 and v.x <= ctrl.max_speed, "accelerates toward max speed, got %s" % v.x)
 	assert_equal(v.y, 0.0, "no vertical velocity when resting on floor")
 
@@ -31,14 +31,14 @@ func test_accelerates_toward_axis_on_floor() -> void:
 func test_acceleration_direction_follows_axis() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, -1.0, false, true, 1.0 / 60.0)
+	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, -1.0, false, false, true, 1.0 / 60.0)
 	assert_true(v.x < 0.0, "negative axis accelerates toward -x, got %s" % v.x)
 
 
 func test_jump_sets_upward_velocity() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 0.0, true, true, 1.0 / 60.0)
+	var v: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 0.0, true, false, true, 1.0 / 60.0)
 	assert_equal(v.y, ctrl.jump_velocity, "jump impulse applied")
 
 
@@ -48,27 +48,40 @@ func test_floor_preserves_vertical_residual() -> void:
 	# flag is still set for the tick. Jump only ever raises it.
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var launched: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, false, true, 1.0 / 60.0)
+	var launched: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, false, false, true, 1.0 / 60.0)
 	assert_equal(launched.y, 8.0, "upward residual survives the floor branch")
-	var boosted: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, true, true, 1.0 / 60.0)
+	var boosted: Vector3 = ctrl.compute_velocity(Vector3(0, 8, 0), 0.0, true, false, true, 1.0 / 60.0)
 	assert_equal(boosted.y, ctrl.jump_velocity, "jump raises a weaker launch to jump speed")
-	var preserved: Vector3 = ctrl.compute_velocity(Vector3(0, 12, 0), 0.0, true, true, 1.0 / 60.0)
+	var preserved: Vector3 = ctrl.compute_velocity(Vector3(0, 12, 0), 0.0, true, false, true, 1.0 / 60.0)
 	assert_equal(preserved.y, 12.0, "jump never cuts a stronger existing launch")
-	var resting: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 0.0, false, true, 1.0 / 60.0)
+	var resting: Vector3 = ctrl.compute_velocity(Vector3.ZERO, 0.0, false, false, true, 1.0 / 60.0)
 	assert_equal(resting.y, 0.0, "a resting mech still rests")
 
 
 func test_gravity_applies_when_airborne() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var v: Vector3 = ctrl.compute_velocity(Vector3(0, 5, 0), 0.0, false, false, 1.0 / 60.0)
+	var v: Vector3 = ctrl.compute_velocity(Vector3(0, 5, 0), 0.0, false, false, false, 1.0 / 60.0)
 	assert_equal(v.y, 5.0 - ctrl.gravity * (1.0 / 60.0), "gravity reduces upward velocity")
+
+
+func test_thrust_rises_when_airborne_and_cuts_without_it() -> void:
+	# Jetpack contract (S09): thrust adds net upward acceleration over gravity
+	# while airborne; releasing the key (or an empty tank) returns to free fall.
+	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
+	_add_cleanup(ctrl)
+	ctrl.thrust_accel = 42.0
+	var rising: Vector3 = ctrl.compute_velocity(Vector3(0, 5, 0), 0.0, false, true, false, 1.0 / 60.0)
+	assert_almost_equal(rising.y, 5.0 + (ctrl.thrust_accel - ctrl.gravity) * (1.0 / 60.0), 0.0001,
+			"thrust adds net upward acceleration over gravity")
+	var coasting: Vector3 = ctrl.compute_velocity(Vector3(0, 5, 0), 0.0, false, false, false, 1.0 / 60.0)
+	assert_true(coasting.y < 5.0, "without thrust the mech falls (empty tank or released key)")
 
 
 func test_decelerates_to_stop() -> void:
 	var ctrl: Node = load(CONTROLLER_SCRIPT).new()
 	_add_cleanup(ctrl)
-	var v: Vector3 = ctrl.compute_velocity(Vector3(5, 0, 0), 0.0, false, true, 1.0 / 60.0)
+	var v: Vector3 = ctrl.compute_velocity(Vector3(5, 0, 0), 0.0, false, false, true, 1.0 / 60.0)
 	assert_true(v.x < 5.0, "decelerates toward zero, got %s" % v.x)
 	assert_equal(v.z, 0.0, "side-plane depth stays locked")
 

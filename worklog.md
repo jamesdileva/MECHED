@@ -5,6 +5,28 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-03 — S09 · Jetpack Mech (Wraith)
+
+**Scope (planned):** per roadmap S09 — the design's riskiest mobility question: does aerial movement create decisions or just overpower? **Wraith** joins as `.tres` data (80hp, 0.9 mass, normal speed, **jetpack: 40 fuel, burn 20/s → 2s of flight per turn, net thrust +12 m/s² over gravity**). Fuel is a separate per-turn pool in MatchState (`jetpack_fuel`/`fuel_max` per entity, refilled on turn transition by the turn manager) so it stays independent of movement energy; spending goes through TurnManager `spend_fuel` with the usual active-entity validation. Thrust control: **hold jump while airborne** — tap jump = normal jump (10 energy), keep holding = thrust (fuel drains per tick, cuts out when empty). Physics stays in the movement controller as a pure extension of `compute_velocity` (new thrust intent param): airborne gravity integrates, thrust adds on top, so empty-fuel cutout and knockback arcs compose naturally — being knocked while airborne is already full-force per S06. Player mech becomes the Wraith this sprint (aerial firing and gap-crossing are feel-testable; the dummy keeps the Standard chassis); roadmap's critical question (overpowered or interesting?) answered by tuning in the S25 feel pass with the fuel numbers above as the first levers.
+
+**Done:**
+
+- `data/mechs/wraith.tres` — 80hp, 0.9 mass, normal speed, jetpack (40 fuel, 20/s burn → 2s flight, thrust 42 = net +12 m/s² climb).
+- Definition gains jetpack fields; `mech.can_thrust()`/`fuel_burn()`; movement controller gains `thrust_accel` (0 = no jetpack) and `compute_velocity` gains the thrust intent (airborne only; floor branch ignores it — verified).
+- Fuel: MatchState `jetpack_fuel`/`fuel_max` per entity, registered at setup from definitions, refilled on turn transition by `end_turn` (fuel is a per-turn pool, independent of movement energy); TurnManager `spend_fuel(actor, tick_amount)`.
+- Driver: hold jump while airborne = thrust; a refused spend (empty tank) cuts thrust the same tick. Tap jump remains a normal energy jump. Aerial firing was already floor-independent ✓; airborne knockback already full-force ✓ (S06).
+- Player mech is the Wraith this sprint; HUD combat line shows `fuel N` next to jetpack owners.
+
+**Verification (roadmap S09 checklist):**
+
+- Tests **67/67 passed** — thrust kinematics (net climb over gravity, free fall without thrust), fuel economy (burn per tick, empty-tank cutout, inactive rejection, no-jetpack chassis), refill on turn transition; Wraith definition loads/applies and thrust accel is chassis-gated. Import/smoke exit 0; CI green.
+- Manual (next batch): cross the gaps you carved, escape a crater trap, fire mid-flight, watch fuel drain/refill, get blasted mid-jetpack (full knockback).
+- Roadmap's critical question — interesting or overpowered? — stays open for the S25 feel pass; first tuning levers: fuel pool, burn rate, net thrust. 2s of flight per turn is deliberately stingy for a first pass.
+
+**Next:** S10 — Tank Mech (Bastion: high mass, high armor, low movement, anchor ability) completes the three archetypes.
+
+---
+
 ## 2026-10-02 — S08 · First Mobility Mech (Strider)
 
 **Scope (planned):** per roadmap S08 — prove that different mobility models change gameplay, and make mech identity data-driven (AGENTS rule: mechs are Resources, never hardcoded). `MechDefinition` Resource (display_name, max_health, mass, max_speed, acceleration, jump_velocity, dash_speed, dash_cost) + two `.tres` files in `data/mechs/`: **Standard** (100hp, mass 1.2, speed 8, no dash) and **Strider** (70hp, mass 0.8, speed 11, accel 48, dash 13 m/s for 25 energy). `mech.apply_definition()` pushes stats into the body/movement controller (works on detached instances so it is testable headless); MatchController.setup applies definitions and uses display names as entity keys (HUD shows Strider/Standard). The **player becomes the Strider** this sprint so dash is feel-testable, and the dummy takes the Standard chassis — the mobility contrast is observable directly: dash burst, higher top speed, lighter mass = noticeably farther knockback. Dash: grounded-only burst along facing, edge-triggered on the dash action, energy-gated via new TurnManager `spend_dash(actor, cost)` (refused when unaffordable or for dash-less chassis). Global jump cost kept (per-mech energy/jump-cost tuning deferred to the S10 archetype pass). Wraith (jetpack) and Bastion follow in S09/S10 to complete the three archetypes before the user's next batched playtest.

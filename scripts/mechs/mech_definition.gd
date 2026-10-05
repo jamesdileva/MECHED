@@ -15,3 +15,10 @@ extends Resource
 ## 0 = this chassis has no dash.
 @export var dash_speed := 0.0
 @export var dash_cost := 25.0
+
+## Jetpack (S09): fuel is a per-turn pool; 0 fuel = no jetpack. Burn is
+## fuel/second while thrusting; thrust is the net upward acceleration on top
+## of gravity (values above gravity rise, equal hovers).
+@export var jetpack_fuel := 0.0
+@export var jetpack_thrust := 42.0
+@export var jetpack_burn := 20.0

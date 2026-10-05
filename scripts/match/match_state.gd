@@ -20,6 +20,10 @@ var phase: int = Phase.INACTIVE
 var movement_energy_left := 0.0
 var turn_time_left := 0.0
 var mech_health: Dictionary = {}
+## Per-entity jetpack fuel (S09): current and per-turn maximum. Entities
+## without a jetpack simply have 0.
+var jetpack_fuel: Dictionary = {}
+var fuel_max: Dictionary = {}
 var match_result := &""
 
 
@@ -34,6 +38,8 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 	mech_health.clear()
 	for entity_name in names:
 		mech_health[entity_name] = STARTING_HEALTH
+	jetpack_fuel.clear()
+	fuel_max.clear()
 
 
 func active_entity_name() -> String:
@@ -69,6 +75,21 @@ func apply_damage(entity_name: String, amount: float) -> float:
 ## Direct initialization (definitions set per-entity max health at setup).
 func set_entity_health(entity_name: String, value: float) -> void:
 	mech_health[entity_name] = value
+
+
+## Registers a jetpack and fills its tank (setup-time, per definition).
+func set_fuel_limit(entity_name: String, limit: float) -> void:
+	fuel_max[entity_name] = limit
+	jetpack_fuel[entity_name] = limit
+
+
+func entity_fuel(entity_name: String) -> float:
+	return jetpack_fuel.get(entity_name, 0.0)
+
+
+## Turn transition: the active entity's tank refills (fuel is a per-turn pool).
+func refill_fuel(entity_name: String) -> void:
+	jetpack_fuel[entity_name] = fuel_max.get(entity_name, 0.0)
 
 
 func entity_health(entity_name: String) -> float:

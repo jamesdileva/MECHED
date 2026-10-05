@@ -137,6 +137,30 @@ func test_dash_refused_when_unaffordable_or_inactive() -> void:
 	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "failed dashes cost nothing")
 
 
+func test_jetpack_fuel_spends_and_refills() -> void:
+	var tm = _begin()
+	tm.state.set_fuel_limit("Mech", 40.0)
+	assert_equal(tm.state.entity_fuel("Mech"), 40.0, "tank fills at setup")
+	assert_true(tm.spend_fuel(0, 20.0), "thrust burns fuel")
+	assert_equal(tm.state.entity_fuel("Mech"), 20.0, "burn is deducted")
+	assert_true(tm.spend_fuel(0, 20.0), "the last of the tank burns")
+	assert_true(tm.spend_fuel(0, 0.1) == false, "empty tank refuses thrust")
+	assert_true(tm.spend_fuel(1, 20.0) == false, "non-active entity cannot burn")
+	assert_true(tm.state.entity_fuel("DummyMech") == 0.0, "chassis without a jetpack has no fuel")
+
+
+func test_fuel_refills_on_turn_transition() -> void:
+	var tm = _begin()
+	tm.state.set_fuel_limit("Mech", 40.0)
+	tm.spend_fuel(0, 40.0)
+	assert_equal(tm.state.entity_fuel("Mech"), 0.0, "tank drained")
+	tm.submit_action(load(END_TURN_ACTION).new(), 0)
+	assert_equal(tm.state.entity_fuel("DummyMech"), 0.0, "no jetpack, no fuel")
+	tm.submit_action(load(END_TURN_ACTION).new(), 1)
+	assert_equal(tm.state.active_entity_name(), "Mech", "back to the Wraith")
+	assert_equal(tm.state.entity_fuel("Mech"), 40.0, "tank refills on the new turn")
+
+
 func test_fire_action_starts_resolution() -> void:
 	var tm = _begin()
 	assert_true(_fire(tm, 0), "active entity may fire")

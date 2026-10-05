@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Wraith"
+max_health = 80.0
+mass = 0.9
+max_speed = 8.0
+acceleration = 40.0
+jump_velocity = 10.0
+dash_speed = 0.0
+dash_cost = 25.0
+jetpack_fuel = 40.0
+jetpack_thrust = 42.0
+jetpack_burn = 20.0
