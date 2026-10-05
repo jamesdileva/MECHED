@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/battlefield/battlefield.tscn" id="2_bf"]
@@ -9,6 +9,7 @@
 [ext_resource type="Resource" path="res://data/mechs/strider.tres" id="7_strider"]
 [ext_resource type="Resource" path="res://data/mechs/standard_mech.tres" id="8_standard"]
 [ext_resource type="Resource" path="res://data/mechs/wraith.tres" id="9_wraith"]
+[ext_resource type="Resource" path="res://data/mechs/bastion.tres" id="10_bastion"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat1"]
 sky_horizon_color = Color(0.66, 0.67, 0.71, 1)
@@ -39,7 +40,7 @@ script = ExtResource("6_match")
 
 [node name="Mech" parent="." instance=ExtResource("5_mech")]
 position = Vector3(0, 3, 0)
-definition = ExtResource("9_wraith")
+definition = ExtResource("10_bastion")
 
 [node name="DummyMech" parent="." instance=ExtResource("5_mech")]
 position = Vector3(12, 7, 0)

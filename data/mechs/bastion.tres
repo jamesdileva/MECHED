@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Bastion"
+max_health = 150.0
+mass = 2.2
+max_speed = 5.0
+acceleration = 30.0
+jump_velocity = 8.0
+dash_speed = 0.0
+dash_cost = 25.0
+jetpack_fuel = 0.0
+jetpack_thrust = 42.0
+jetpack_burn = 20.0

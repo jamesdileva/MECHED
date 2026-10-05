@@ -5,6 +5,26 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-03 — S10 · Tank Mech (Bastion)
+
+**Scope (planned):** per roadmap S10 — the third archetype completes the mobility triangle. **Bastion** as `.tres` data: 150hp, **2.2 mass** (nearly 3× the Strider — knockback resistance comes free from the S06 impulse/mass rule), 5 m/s top speed, 8 jump. **Anchor ability** (E / LT): a toggle that pins the mech — while anchored, blast impulses are ignored (knockback module returns zero) and movement input is locked. The tradeoff is the cost (no energy price, per the S23 no-passive-bonuses philosophy): you buy immunity to being shoved off cliffs you just carved by giving up all mobility, which is exactly the Bastion fantasy — plant, dig in, and shell. Anchor resets when the turn passes (it is a per-turn stance, not a permanent state). Player mech becomes the Bastion this sprint so anchor is feel-testable; trying the other archetypes is a one-line definition swap in main.tscn (documented in the retest checklist). Roadmap's three-archetype comparison is then fully manual: same map, swap the line, feel the difference.
+
+**Done:**
+
+- `data/mechs/bastion.tres` — 150hp, 2.2 mass (≈3× the Strider: knockback resistance falls out of the S06 impulse/mass rule with no special-casing), 5 m/s, jump 8, no dash/jetpack.
+- Anchor ability: toggle on use_ability (E / LT). While anchored: blast impulses return zero (knockback module gained the `anchored` param) and the driver locks walk/jump/dash/thrust — total immobility is the price of immunity. Fire/aim/end-turn stay live (plant-and-shell is the fantasy). The stance is per-turn: `_zero_intent` drops it when the turn passes.
+- Player mech becomes the Bastion this sprint; swapping the player's archetype is a one-line `definition = ExtResource(...)` change in main.tscn (checklist below).
+
+**Verification (roadmap S10 checklist):**
+
+- Tests **69/69 passed** — Bastion archetype assertions (heaviest/most armored/slowest/no mobility gadgets), anchored-mech blast immunity, plus all prior suites; import/smoke exit 0; CI green.
+- The roadmap's three-archetype comparison (Bastion vs Strider vs Wraith on identical terrain) is the next batched playtest: swap the player definition line per run and compare feel + knockback response directly.
+- Known deferral: Bastion's extra abilities (Armor Brace, Siege Mode) belong to the S23 ability pass; per-mech energy pools / jump costs to the S25 tuning pass if asked for.
+
+**Next:** pause for the user's archetype playtest (S08–S10 batch). After that: S11 — Universal Weapon Framework (weapons separate from mechs).
+
+---
+
 ## 2026-10-03 — S09 · Jetpack Mech (Wraith)
 
 **Scope (planned):** per roadmap S09 — the design's riskiest mobility question: does aerial movement create decisions or just overpower? **Wraith** joins as `.tres` data (80hp, 0.9 mass, normal speed, **jetpack: 40 fuel, burn 20/s → 2s of flight per turn, net thrust +12 m/s² over gravity**). Fuel is a separate per-turn pool in MatchState (`jetpack_fuel`/`fuel_max` per entity, refilled on turn transition by the turn manager) so it stays independent of movement energy; spending goes through TurnManager `spend_fuel` with the usual active-entity validation. Thrust control: **hold jump while airborne** — tap jump = normal jump (10 energy), keep holding = thrust (fuel drains per tick, cuts out when empty). Physics stays in the movement controller as a pure extension of `compute_velocity` (new thrust intent param): airborne gravity integrates, thrust adds on top, so empty-fuel cutout and knockback arcs compose naturally — being knocked while airborne is already full-force per S06. Player mech becomes the Wraith this sprint (aerial firing and gap-crossing are feel-testable; the dummy keeps the Standard chassis); roadmap's critical question (overpowered or interesting?) answered by tuning in the S25 feel pass with the fuel numbers above as the first levers.

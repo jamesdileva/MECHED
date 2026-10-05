@@ -33,6 +33,10 @@ var charge := 0.0
 ## turns like GunBound's angle memory.
 var aim_angle := 45.0
 
+## Bastion's anchor stance (S10): blast-immune but immobile. Toggled by the
+## driver; cleared when the turn passes.
+var anchored := false
+
 ## Health mirror — authoritative value lives in MatchState.mech_health.
 var health := 100.0
 

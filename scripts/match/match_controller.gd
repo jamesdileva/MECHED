@@ -82,6 +82,8 @@ func _zero_intent(mech) -> void:
 	mech.want_thrust = false
 	mech.aim_axis = 0.0
 	mech.charge = 0.0
+	# The anchor is a per-turn stance: it drops when your turn ends.
+	mech.anchored = false
 
 
 ## Placeholder opponent (real AI is S15+): no movement, brief pause, pass.
@@ -100,6 +102,12 @@ func _drive_player(mech, index: int, delta: float) -> void:
 	# Fire/end-turn stay available on an empty energy bar.
 	var in_move_phase: bool = turn_manager.state.is_in_move_phase()
 	var may_move: bool = turn_manager.state.can_move()
+	if in_move_phase and InputLayer.is_action_just_pressed("use_ability"):
+		mech.anchored = not mech.anchored
+	# An anchored Bastion plants: no walk, no jump, no dash, no thrust —
+	# blast immunity is paid for with total immobility.
+	if mech.anchored:
+		may_move = false
 	mech.move_axis = InputLayer.get_move_axis() if may_move else 0.0
 	# Requested distance (|axis| × max_speed × dt), never actual displacement —
 	# a mech knocked back by a blast must not pay energy for it.
@@ -182,7 +190,7 @@ func _resolve_impact(position: Vector3) -> void:
 				_apply_damage(collider, damage)
 			var impulse: Vector3 = Knockback.impulse(
 					collider.global_position, position,
-					collider.is_on_floor(), collider.mass)
+					collider.is_on_floor(), collider.mass, collider.anchored)
 			if impulse != Vector3.ZERO:
 				# Physics owns what the impulse becomes (guide §10): arcs,
 				# terrain, falling — the next move_and_slide integrates it.

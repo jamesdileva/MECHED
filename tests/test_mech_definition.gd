@@ -6,6 +6,7 @@ extends "res://tests/test_base.gd"
 const STRIDER := "res://data/mechs/strider.tres"
 const STANDARD := "res://data/mechs/standard_mech.tres"
 const WRAITH := "res://data/mechs/wraith.tres"
+const BASTION := "res://data/mechs/bastion.tres"
 const MECH_SCENE := "res://scenes/mechs/mech.tscn"
 const CONTROLLER_SCRIPT := "res://scripts/movement/mech_movement_controller.gd"
 
@@ -14,11 +15,13 @@ func test_definition_resources_load() -> void:
 	var strider: Resource = load(STRIDER)
 	var standard: Resource = load(STANDARD)
 	var wraith: Resource = load(WRAITH)
-	assert_true(strider != null and standard != null and wraith != null,
+	var bastion: Resource = load(BASTION)
+	assert_true(strider != null and standard != null and wraith != null and bastion != null,
 			"all chassis definitions load")
 	assert_equal(strider.display_name, "Strider", "strider display name")
 	assert_equal(standard.display_name, "Standard", "standard display name")
 	assert_equal(wraith.display_name, "Wraith", "wraith display name")
+	assert_equal(bastion.display_name, "Bastion", "bastion display name")
 
 
 func test_archetypes_differ_as_designed() -> void:
@@ -79,3 +82,15 @@ func test_jetpack_definition_pushes_thrust() -> void:
 	assert_true(mech.can_thrust() == false, "Standard chassis cannot thrust")
 	assert_equal(mv.thrust_accel, 0.0, "non-jetpack chassis has no thrust accel")
 	mech.free()
+
+
+func test_bastion_is_the_tank_archetype() -> void:
+	var bastion: Resource = load(BASTION)
+	var strider: Resource = load(STRIDER)
+	var standard: Resource = load(STANDARD)
+	assert_true(bastion.mass > standard.mass and bastion.mass > strider.mass,
+			"Bastion is the heaviest chassis (knockback resistance)")
+	assert_true(bastion.max_health > standard.max_health, "Bastion is the most armored")
+	assert_true(bastion.max_speed < standard.max_speed, "Bastion is the slowest")
+	assert_true(bastion.dash_speed == 0.0 and bastion.jetpack_fuel == 0.0,
+			"Bastion has neither dash nor jetpack")

@@ -15,8 +15,12 @@ const GROUND_ABSORPTION := 0.5
 
 
 ## Velocity delta applied to a mech hit by an explosion at explosion_pos.
+## Anchored mechs (Bastion's stance, S10) ignore blasts entirely — that
+## immunity is the anchor's whole value.
 static func impulse(mech_pos: Vector3, explosion_pos: Vector3, on_ground: bool,
-		mass: float) -> Vector3:
+		mass: float, anchored := false) -> Vector3:
+	if anchored:
+		return Vector3.ZERO
 	var to_mech := mech_pos - explosion_pos
 	var dist := to_mech.length()
 	var factor := falloff(dist)

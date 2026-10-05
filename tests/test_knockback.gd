@@ -63,3 +63,11 @@ func test_beyond_radius_returns_zero() -> void:
 	var k = load(KNOCKBACK)
 	var v: Vector3 = k.impulse(Vector3(10, 0, 0), Vector3.ZERO, false, 1.0)
 	assert_equal(v, Vector3.ZERO, "no impulse outside the knockback radius")
+
+
+func test_anchored_mech_ignores_blasts() -> void:
+	var k = load(KNOCKBACK)
+	# Bastion's anchor (S10): planted mech takes zero impulse from any blast,
+	# even a direct hit — immunity is the stance's whole value.
+	var v: Vector3 = k.impulse(Vector3(0.5, 1, 0), Vector3.ZERO, true, 2.2, true)
+	assert_equal(v, Vector3.ZERO, "anchored mech takes no knockback")
