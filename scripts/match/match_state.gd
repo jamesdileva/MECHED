@@ -24,6 +24,10 @@ var mech_health: Dictionary = {}
 ## without a jetpack simply have 0.
 var jetpack_fuel: Dictionary = {}
 var fuel_max: Dictionary = {}
+## Universal weapons (S11): per-entity loadout of WeaponDefinitions and the
+## armed slot. Every chassis can equip every weapon.
+var weapon_loadouts: Dictionary = {}
+var active_weapon_index: Dictionary = {}
 var match_result := &""
 
 
@@ -40,6 +44,8 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 		mech_health[entity_name] = STARTING_HEALTH
 	jetpack_fuel.clear()
 	fuel_max.clear()
+	weapon_loadouts.clear()
+	active_weapon_index.clear()
 
 
 func active_entity_name() -> String:
@@ -90,6 +96,32 @@ func entity_fuel(entity_name: String) -> float:
 ## Turn transition: the active entity's tank refills (fuel is a per-turn pool).
 func refill_fuel(entity_name: String) -> void:
 	jetpack_fuel[entity_name] = fuel_max.get(entity_name, 0.0)
+
+
+## Equips a weapon loadout (S11); slot 0 is armed.
+func set_loadout(entity_name: String, weapons: Array) -> void:
+	weapon_loadouts[entity_name] = weapons.duplicate()
+	active_weapon_index[entity_name] = 0
+
+
+## Cycles to the next weapon; wraps around. Single-weapon loadouts are a no-op.
+func cycle_weapon(entity_name: String) -> void:
+	var loadout: Array = weapon_loadouts.get(entity_name, [])
+	if loadout.size() < 2:
+		return
+	var slot: int = (int(active_weapon_index.get(entity_name, 0)) + 1) % loadout.size()
+	active_weapon_index[entity_name] = slot
+
+
+func active_weapon_slot(entity_name: String) -> int:
+	return int(active_weapon_index.get(entity_name, 0))
+
+
+func active_weapon(entity_name: String) -> Resource:
+	var loadout: Array = weapon_loadouts.get(entity_name, [])
+	if loadout.is_empty():
+		return null
+	return loadout[active_weapon_slot(entity_name) % loadout.size()]
 
 
 func entity_health(entity_name: String) -> float:

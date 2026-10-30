@@ -59,6 +59,9 @@ func _combat_text() -> String:
 			var entry := "%s %.0f" % [entity_name, s.entity_health(entity_name)]
 			if s.fuel_max.get(entity_name, 0.0) > 0.0:
 				entry += " fuel %.0f" % s.entity_fuel(entity_name)
+			var weapon = s.active_weapon(entity_name)
+			if weapon != null:
+				entry += " [%s]" % weapon.display_name
 			parts.append(entry)
 		line = " | ".join(parts)
 	var mech: Node = get_tree().get_first_node_in_group("mech")

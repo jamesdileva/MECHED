@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_definition.gd" id="1_weap"]
+
+[resource]
+script = ExtResource("1_weap")
+display_name = "Energy Shot"
+speed_min = 16.0
+speed_max = 40.0
+damage_max = 25.0
+explosion_radius = 1.4
+direct_hit_radius = 0.6
+knockback_radius = 3.0
+knockback_force = 8.0
+bounces = 0
+bounciness = 0.0
+gravity_mult = 0.35
+terrain_damage_mult = 0.4

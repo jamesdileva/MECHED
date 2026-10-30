@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_definition.gd" id="1_weap"]
+
+[resource]
+script = ExtResource("1_weap")
+display_name = "Grenade"
+speed_min = 6.0
+speed_max = 22.0
+damage_max = 30.0
+explosion_radius = 2.0
+direct_hit_radius = 0.75
+knockback_radius = 4.0
+knockback_force = 10.0
+bounces = 2
+bounciness = 0.45
+gravity_mult = 1.0
+terrain_damage_mult = 1.2

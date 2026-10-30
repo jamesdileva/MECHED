@@ -22,16 +22,25 @@ const Ballistics := preload("res://scripts/combat/ballistics.gd")
 const Knockback := preload("res://scripts/combat/knockback.gd")
 const PROJECTILE_SCENE := preload("res://scenes/projectiles/projectile.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
+const WEAPON_ROCKET := preload("res://data/weapons/rocket.tres")
+const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
+const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
 
 const CHARGE_TIME := 1.2
 ## Placeholder AI think time before passing (S15 replaces this driver).
 const DUMMY_TURN_DELAY := 1.5
+## Universal weapons (S11): the default loadout every chassis equips when its
+## definition does not name a specific one.
+const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
 
 @export var player_index := 0
 
 var turn_manager
 var entities: Array[Node] = []
 var _dummy_wait := 0.0
+## Stats of the shell currently in flight, computed from the fired weapon at
+## spawn; impact resolution consumes them (one shell in flight at a time).
+var _pending_stats: Dictionary = {}
 ## Destructible terrain (terrain_system.gd), wired by Main. Craters are carved
 ## at every projectile impact before the turn resolves.
 var terrain = null
@@ -57,6 +66,12 @@ func setup(p_entities: Array) -> void:
 		entity.sync_health(max_health)
 		if entity.definition != null and entity.definition.jetpack_fuel > 0.0:
 			turn_manager.state.set_fuel_limit(entity_name, entity.definition.jetpack_fuel)
+		# Universal weapons: definitions may narrow the loadout, otherwise
+		# every chassis equips the full set.
+		var loadout: Array = entity.definition.weapons \
+				if entity.definition != null and not entity.definition.weapons.is_empty() \
+				else DEFAULT_WEAPONS
+		turn_manager.state.set_loadout(entity_name, loadout)
 	add_to_group("match_controller")
 
 
@@ -139,15 +154,27 @@ func _drive_player(mech, index: int, delta: float) -> void:
 		elif InputLayer.is_action_just_released("fire") and mech.charge > 0.0:
 			var action = FireAction.new()
 			action.power = mech.charge
+			action.weapon_index = turn_manager.state.active_weapon_slot(
+					String(mech.display_name()))
 			if turn_manager.submit_action(action, index):
 				_spawn_projectile(mech, mech.charge)
 			mech.charge = 0.0
+
+		if InputLayer.is_action_just_pressed("cycle_weapon"):
+			turn_manager.state.cycle_weapon(String(mech.display_name()))
 
 		if InputLayer.is_action_just_pressed("end_turn"):
 			turn_manager.submit_action(EndTurnAction.new(), index)
 
 
 func _spawn_projectile(mech, power: float) -> void:
+	var weapon = turn_manager.state.active_weapon(String(mech.display_name()))
+	if weapon == null:
+		return
+	var modifier = mech.definition.weapon_modifier if mech.definition != null else null
+	var stats: Dictionary = weapon.effective(modifier)
+	_pending_stats = stats
+
 	var projectile = PROJECTILE_SCENE.instantiate()
 	var muzzle: Node3D = mech.get_node("Visual/AimPivot/Muzzle")
 	# Set the transform BEFORE the body enters the physics space: a body added
@@ -155,8 +182,12 @@ func _spawn_projectile(mech, power: float) -> void:
 	# underground) and detonates at the shooter's feet.
 	projectile.position = muzzle.global_position
 	projectile.set_shooter(mech)
+	projectile.gravity_mult = stats["gravity_mult"]
+	projectile.bounces_left = stats["bounces"]
+	projectile.bounciness = stats["bounciness"]
 	get_tree().current_scene.add_child(projectile)
-	projectile.launch(Ballistics.launch_velocity(mech.aim_angle, mech.facing(), power))
+	projectile.launch(Ballistics.launch_velocity(
+			mech.aim_angle, mech.facing(), power, stats["speed_min"], stats["speed_max"]))
 	projectile.exploded.connect(_on_projectile_exploded, CONNECT_ONE_SHOT)
 
 
@@ -168,13 +199,14 @@ func _on_projectile_exploded(position: Vector3) -> void:
 ## locked, and the sphere query below needs it unlocked.
 func _resolve_impact(position: Vector3) -> void:
 	var fx = EXPLOSION_SCENE.instantiate()
-	fx.blast_radius = Ballistics.EXPLOSION_RADIUS
+	var stats: Dictionary = _pending_stats
+	fx.blast_radius = stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS)
 	get_tree().current_scene.add_child(fx)
 	fx.global_position = position
 
 	var params := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
-	sphere.radius = Knockback.KNOCKBACK_RADIUS
+	sphere.radius = stats.get("knockback_radius", Knockback.KNOCKBACK_RADIUS)
 	params.shape = sphere
 	params.transform = Transform3D(Basis(), position)
 	params.collide_with_bodies = true
@@ -185,19 +217,28 @@ func _resolve_impact(position: Vector3) -> void:
 		var collider = hit.get("collider")
 		if collider is Node and collider.is_in_group("mech"):
 			var dist: float = (collider.global_position - position).length()
-			var damage := Ballistics.damage_falloff(dist)
+			var damage: float = Ballistics.damage_falloff(dist,
+					stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS),
+					stats.get("damage_max", Ballistics.MAX_DAMAGE),
+					stats.get("direct_hit_radius", Ballistics.DIRECT_HIT_RADIUS))
 			if damage > 0.0:
 				_apply_damage(collider, damage)
 			var impulse: Vector3 = Knockback.impulse(
 					collider.global_position, position,
-					collider.is_on_floor(), collider.mass, collider.anchored)
+					collider.is_on_floor(), collider.mass, collider.anchored,
+					stats.get("knockback_force", Knockback.KNOCKBACK_FORCE),
+					stats.get("knockback_radius", Knockback.KNOCKBACK_RADIUS))
 			if impulse != Vector3.ZERO:
 				# Physics owns what the impulse becomes (guide §10): arcs,
 				# terrain, falling — the next move_and_slide integrates it.
 				collider.velocity += impulse
 
 	if terrain != null:
-		terrain.apply_explosion(position, Ballistics.EXPLOSION_RADIUS)
+		# Crater size scales with the weapon's terrain damage (S11: grenades
+		# dig, energy shots scorch).
+		var carve: float = stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS) \
+				* stats.get("terrain_damage_mult", 1.0)
+		terrain.apply_explosion(position, carve)
 
 	turn_manager.finish_resolution()
 

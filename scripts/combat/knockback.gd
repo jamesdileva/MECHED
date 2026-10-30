@@ -15,20 +15,22 @@ const GROUND_ABSORPTION := 0.5
 
 
 ## Velocity delta applied to a mech hit by an explosion at explosion_pos.
-## Anchored mechs (Bastion's stance, S10) ignore blasts entirely — that
-## immunity is the anchor's whole value.
+## Force and radius come from the fired weapon's definition (S11); anchored
+## mechs (Bastion's stance, S10) ignore blasts entirely — that immunity is
+## the anchor's whole value.
 static func impulse(mech_pos: Vector3, explosion_pos: Vector3, on_ground: bool,
-		mass: float, anchored := false) -> Vector3:
+		mass: float, anchored := false, force := KNOCKBACK_FORCE,
+		radius := KNOCKBACK_RADIUS) -> Vector3:
 	if anchored:
 		return Vector3.ZERO
 	var to_mech := mech_pos - explosion_pos
 	var dist := to_mech.length()
-	var factor := falloff(dist)
+	var factor := falloff(dist, radius)
 	if factor <= 0.0:
 		return Vector3.ZERO
 	# Explosion directly at the mech's origin (degenerate direction): launch up.
 	var dir := to_mech / dist if dist > 0.01 else Vector3.UP
-	var speed := KNOCKBACK_FORCE * factor / maxf(mass, 0.1)
+	var speed := force * factor / maxf(mass, 0.1)
 	if on_ground:
 		speed *= 1.0 - GROUND_ABSORPTION
 	return dir * speed

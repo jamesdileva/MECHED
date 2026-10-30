@@ -5,6 +5,29 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-10-30 — S11 · Universal Weapon Framework
+
+**Scope (planned):** per roadmap S11 — separate weapons from mechs (Pillar 3). `WeaponDefinition` Resource (display_name, speed_min/max, damage_max, explosion_radius, direct_hit_radius, knockback_radius, knockback_force, bounces, bounciness, gravity_mult, terrain_damage_mult) + three `.tres` weapons in `data/weapons/`: **Rocket** (the current baseline: 8–30 m/s, 40 dmg, 2.5m blast), **Grenade** (slower 6–22, 30 dmg, bounces twice via a physics bounce material then detonates, 1.2× terrain damage), **Energy Shot** (fast flat 16–40 at 0.35 gravity, 25 dmg, small 1.4m blast, 0.4× terrain damage — architecture §10's "lower terrain destruction"). `WeaponModifier` Resource (speed/damage/knockback multipliers) is the S12 hook: `WeaponDefinition.effective(modifier)` returns multiplier-scaled stats; Bastion ships with a `siege_modifier` (+30% damage, −20% speed) proving the pipeline end-to-end. Ballistics/knockback parameterized with backward-compatible defaults (existing call sites/tests unchanged). Projectile gains per-weapon physics (bounce counting via contact hits, gravity mult, bounce material). MatchState owns loadouts: every mech equips ALL three (universal weapons), Tab/LB/RB cycles, FireAction records the weapon slot fired (replay-ready), spawn/resolve consume the active weapon's stats — **no weapon requires mech-specific code** (verification). HUD shows the armed weapon. Cooldown/tags from architecture §9 deliberately absent: one shot per turn IS the cooldown; tags arrive with S12 transformations.
+
+**Done:**
+
+- `scripts/weapons/` — `weapon_definition.gd` (stats + `effective(modifier)`) and `weapon_modifier.gd` (speed/damage/knockback multipliers, the S12 hook).
+- `data/weapons/` — rocket/grenade/energy_shot as data; `data/mechs/siege_modifier.tres` attached to the Bastion chassis (proving the modifier pipeline with real data).
+- Ballistics `launch_velocity`/`speed_for_power` and knockback `impulse` take per-weapon ranges/forces with backward-compatible defaults — existing call sites and tests untouched.
+- Projectile: per-weapon `gravity_mult`, `bounces_left`, `bounciness` (physics bounce material created at spawn when the weapon bounces); direct mech hits detonate immediately, non-mech contacts consume bounce charges.
+- MatchState owns `weapon_loadouts`/`active_weapon_index` (`set_loadout`/`cycle_weapon`/`active_weapon`); MatchController.setup equips definitions' loadouts or the full default set on every chassis; driver cycles with the existing Tab/LB/RB action; FireAction records `weapon_index`; spawn/impact resolution consume the armed weapon's stats (damage falloff, knockback force/radius, terrain carve radius × terrain_damage_mult).
+- HUD combat line shows the armed weapon per entity: `Strider 70 [Grenade] | ...`.
+
+**Verification (roadmap S11 checklist):**
+
+- Tests **76/76 passed** — 7 new weapon tests: all three definitions load, archetype stats differ as designed (grenade bounces + digs, energy shot fast/flatter/low terrain), `effective(null)` is identity, siege modifier scales damage/speed/knockback without touching behavior fields, ballistics honors per-weapon speed ranges, loadout cycling wraps, and **every chassis arms every weapon** (the roadmap verification made executable over all four chassis × three weapons). Import/smoke exit 0; CI green.
+- Manual (next batch): Tab/LB/RB cycling with HUD weapon badge, grenade bouncing off terrain before detonating, energy shot's flat arc + small craters, Bastion's siege-modifier damage bump.
+- Known deferral: per-weapon transformations (Siege/Split/Guided Rocket) are S12; the modifier multipliers here are explicitly the interim hook.
+
+**Next:** S12 — Weapon Transformation (the signature system: same base weapon, different behavior per mech).
+
+---
+
 ## 2026-10-03 — S10 · Tank Mech (Bastion)
 
 **Scope (planned):** per roadmap S10 — the third archetype completes the mobility triangle. **Bastion** as `.tres` data: 150hp, **2.2 mass** (nearly 3× the Strider — knockback resistance comes free from the S06 impulse/mass rule), 5 m/s top speed, 8 jump. **Anchor ability** (E / LT): a toggle that pins the mech — while anchored, blast impulses are ignored (knockback module returns zero) and movement input is locked. The tradeoff is the cost (no energy price, per the S23 no-passive-bonuses philosophy): you buy immunity to being shoved off cliffs you just carved by giving up all mobility, which is exactly the Bastion fantasy — plant, dig in, and shell. Anchor resets when the turn passes (it is a per-turn stance, not a permanent state). Player mech becomes the Bastion this sprint so anchor is feel-testable; trying the other archetypes is a one-line definition swap in main.tscn (documented in the retest checklist). Roadmap's three-archetype comparison is then fully manual: same map, swap the line, feel the difference.

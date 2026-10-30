@@ -15,17 +15,18 @@ const DIRECT_HIT_RADIUS := 0.75
 const MAX_DAMAGE := 40.0
 
 
-static func speed_for_power(power: float) -> float:
-	return lerpf(MIN_SPEED, MAX_SPEED, clampf(power, 0.0, 1.0))
+static func speed_for_power(power: float, min_speed := MIN_SPEED, max_speed := MAX_SPEED) -> float:
+	return lerpf(min_speed, max_speed, clampf(power, 0.0, 1.0))
 
 
 ## Side-plane launch vector: angle in degrees relative to the horizon
 ## (−10..90 — slightly below horizon lets a mech blast the ground at its own
 ## feet), toward the facing sign (mirrors x). Matches the mech's AimPivot
-## rotation convention.
-static func launch_velocity(angle_deg: float, facing: float, power: float) -> Vector3:
+## rotation convention. Speed range comes from the fired weapon's definition.
+static func launch_velocity(angle_deg: float, facing: float, power: float,
+		min_speed := MIN_SPEED, max_speed := MAX_SPEED) -> Vector3:
 	var a := deg_to_rad(clampf(angle_deg, MIN_ANGLE_DEG, 90.0))
-	return Vector3(facing * cos(a), sin(a), 0.0) * speed_for_power(power)
+	return Vector3(facing * cos(a), sin(a), 0.0) * speed_for_power(power, min_speed, max_speed)
 
 
 ## Analytic flight time to a horizontal plane y = ground_y: solves

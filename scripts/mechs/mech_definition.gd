@@ -22,3 +22,9 @@ extends Resource
 @export var jetpack_fuel := 0.0
 @export var jetpack_thrust := 42.0
 @export var jetpack_burn := 20.0
+
+## Weapon loadout (S11): universal weapons — any WeaponDefinition fits any
+## chassis. Empty means the match layer equips the full default set.
+@export var weapons: Array = []
+## Optional weapon modifier (S11 multipliers; S12 per-weapon transformations).
+@export var weapon_modifier: Resource = null

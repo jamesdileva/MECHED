@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_definition.gd" id="1_weap"]
+
+[resource]
+script = ExtResource("1_weap")
+display_name = "Rocket"
+speed_min = 8.0
+speed_max = 30.0
+damage_max = 40.0
+explosion_radius = 2.5
+direct_hit_radius = 0.75
+knockback_radius = 5.0
+knockback_force = 14.0
+bounces = 0
+bounciness = 0.0
+gravity_mult = 1.0
+terrain_damage_mult = 1.0
