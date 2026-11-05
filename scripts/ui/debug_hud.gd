@@ -61,13 +61,27 @@ func _combat_text() -> String:
 				entry += " fuel %.0f" % s.entity_fuel(entity_name)
 			var weapon = s.active_weapon(entity_name)
 			if weapon != null:
-				entry += " [%s]" % weapon.display_name
+				entry += " [%s]" % _weapon_label(entity_name, weapon, match_ctrl)
 			parts.append(entry)
 		line = " | ".join(parts)
 	var mech: Node = get_tree().get_first_node_in_group("mech")
 	if mech != null:
 		line += "  aim %.0f°  pow %.2f" % [mech.aim_angle, mech.charge]
 	return line
+
+
+func _weapon_label(entity_name: String, weapon: Resource, match_ctrl: Node) -> String:
+	# Show the transformation name when the firing chassis transforms this
+	# base weapon (S12: Rocket -> Siege/Split/Guided Rocket).
+	var label: String = weapon.display_name
+	for entity in match_ctrl.entities:
+		if String(entity.display_name()) == entity_name and entity.definition != null \
+				and entity.definition.weapon_modifier != null:
+			var transformation = entity.definition.weapon_modifier.transformation_for(
+					weapon.display_name)
+			if transformation != null:
+				return transformation.display_name
+	return label
 
 
 func _flag(value: bool) -> String:

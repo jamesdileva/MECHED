@@ -1,7 +1,7 @@
 [gd_resource type="Resource" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
-[ext_resource type="Resource" path="res://data/mechs/siege_modifier.tres" id="2_siege"]
+[ext_resource type="Resource" path="res://data/mechs/bastion_modifier.tres" id="2_mod"]
 
 [resource]
 script = ExtResource("1_def")
@@ -16,4 +16,4 @@ dash_cost = 25.0
 jetpack_fuel = 0.0
 jetpack_thrust = 42.0
 jetpack_burn = 20.0
-weapon_modifier = ExtResource("2_siege")
+weapon_modifier = ExtResource("2_mod")

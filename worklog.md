@@ -5,6 +5,26 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/weapons/weapon_transformation.gd` — base_weapon name, stat multipliers, and the two behavior fields multipliers can't express: `projectile_count`/`spread_degrees` (multi-shot) and `homing_strength` (capped-rate guidance); `apply(stats)` layers onto S11 modifier-scaled stats.
+- `WeaponModifier` gains `transformations: Array` + `transformation_for(base_name)` lookup; per-mech modifier files (`bastion/strider/wraith_modifier.tres`) wire their Rocket transformations; interim `siege_modifier.tres` retired (its role was documented as the S11 interim hook).
+- Transformation data: Siege Rocket (×1.4 dmg / ×1.3 blast / ×1.5 terrain / ×0.75 speed), Split Rocket (3 shells @10°, ×0.5 dmg each, ×0.7 blast), Guided Rocket (homing 3.5, ×0.85 dmg).
+- Projectile: carries its own `impact_stats`; homing steering via pure `steer_direction` (slerp, capped rate, direction-only — speed and base arc preserved); `spread_offset` pure math; `exploded` now carries position + stats so multi-shot resolves independently per submunition; MatchController counts pending shells and finishes the turn only when the LAST one dies.
+- HUD combat line shows the transformed name (Bastion's Rocket reads `[Siege Rocket]`).
+
+**Verification (roadmap S12 checklist):**
+
+- Tests **82/82 passed** — 6 new: Siege renames + rescales (harder/bigger/slower), Split fires 3 × half-strength with symmetric spread offsets (−spread, 0, +spread), Guided homes and trades damage for accuracy, untransformed weapons keep count-1/no-homing identity, chassis-modifier wiring executable (Bastion→Siege, Strider→Split, Wraith→Guided, Standard→nothing), steering caps turn rate without overshoot and stays normalized. All prior suites green; import/smoke exit 0; CI green.
+- Roadmap's three checks, mapped: base projectile recognizable (speed-preserving guidance + same shell scene), mech changes behavior (three distinct stat/behavior sheets per chassis), meaningful tactical choice (Siege = nuke one spot, Split = area denial at range risk, Guided = accuracy at lower damage).
+- Manual (next batch): fire the Rocket as each chassis — Bastion's slow heavy shell, Strider's three-way spread, Wraith's shell curving toward the dummy; watch the HUD names.
+
+**Next:** S13 — Terrain as Tactical Tool (tunnels, cover, destructible structures — terrain becomes a weapon).
+
+**Done:**
+
+---
+
 ## 2026-10-30 — S11 · Universal Weapon Framework
 
 **Scope (planned):** per roadmap S11 — separate weapons from mechs (Pillar 3). `WeaponDefinition` Resource (display_name, speed_min/max, damage_max, explosion_radius, direct_hit_radius, knockback_radius, knockback_force, bounces, bounciness, gravity_mult, terrain_damage_mult) + three `.tres` weapons in `data/weapons/`: **Rocket** (the current baseline: 8–30 m/s, 40 dmg, 2.5m blast), **Grenade** (slower 6–22, 30 dmg, bounces twice via a physics bounce material then detonates, 1.2× terrain damage), **Energy Shot** (fast flat 16–40 at 0.35 gravity, 25 dmg, small 1.4m blast, 0.4× terrain damage — architecture §10's "lower terrain destruction"). `WeaponModifier` Resource (speed/damage/knockback multipliers) is the S12 hook: `WeaponDefinition.effective(modifier)` returns multiplier-scaled stats; Bastion ships with a `siege_modifier` (+30% damage, −20% speed) proving the pipeline end-to-end. Ballistics/knockback parameterized with backward-compatible defaults (existing call sites/tests unchanged). Projectile gains per-weapon physics (bounce counting via contact hits, gravity mult, bounce material). MatchState owns loadouts: every mech equips ALL three (universal weapons), Tab/LB/RB cycles, FireAction records the weapon slot fired (replay-ready), spawn/resolve consume the active weapon's stats — **no weapon requires mech-specific code** (verification). HUD shows the armed weapon. Cooldown/tags from architecture §9 deliberately absent: one shot per turn IS the cooldown; tags arrive with S12 transformations.

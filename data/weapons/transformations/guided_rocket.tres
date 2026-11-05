@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_transformation.gd" id="1_tf"]
+
+[resource]
+script = ExtResource("1_tf")
+display_name = "Guided Rocket"
+base_weapon = "Rocket"
+speed_mult = 1.0
+damage_mult = 0.85
+blast_mult = 0.9
+knockback_mult = 1.0
+terrain_mult = 1.0
+projectile_count = 1
+spread_degrees = 0.0
+homing_strength = 3.5

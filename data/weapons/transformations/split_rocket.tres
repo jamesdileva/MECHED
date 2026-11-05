@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_transformation.gd" id="1_tf"]
+
+[resource]
+script = ExtResource("1_tf")
+display_name = "Split Rocket"
+base_weapon = "Rocket"
+speed_mult = 1.1
+damage_mult = 0.5
+blast_mult = 0.7
+knockback_mult = 0.8
+terrain_mult = 0.8
+projectile_count = 3
+spread_degrees = 10.0
+homing_strength = 0.0

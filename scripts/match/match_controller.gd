@@ -25,6 +25,7 @@ const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn
 const WEAPON_ROCKET := preload("res://data/weapons/rocket.tres")
 const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
 const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
+const ProjectileScript := preload("res://scripts/projectiles/projectile.gd")
 
 const CHARGE_TIME := 1.2
 ## Placeholder AI think time before passing (S15 replaces this driver).
@@ -38,9 +39,9 @@ const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
 var turn_manager
 var entities: Array[Node] = []
 var _dummy_wait := 0.0
-## Stats of the shell currently in flight, computed from the fired weapon at
-## spawn; impact resolution consumes them (one shell in flight at a time).
-var _pending_stats: Dictionary = {}
+## Shells in flight (S12 multi-shot): the turn resolves when the count
+## reaches zero, no matter which shell dies first.
+var _pending_shells := 0
 ## Destructible terrain (terrain_system.gd), wired by Main. Craters are carved
 ## at every projectile impact before the turn resolves.
 var terrain = null
@@ -173,33 +174,60 @@ func _spawn_projectile(mech, power: float) -> void:
 		return
 	var modifier = mech.definition.weapon_modifier if mech.definition != null else null
 	var stats: Dictionary = weapon.effective(modifier)
-	_pending_stats = stats
-
-	var projectile = PROJECTILE_SCENE.instantiate()
+	# The signature system (S12): the mech's transformation layers its identity
+	# onto the base weapon — stats and behavior (count/spread/homing).
+	var transformation = modifier.transformation_for(weapon.display_name) \
+			if modifier != null else null
+	if transformation != null:
+		stats = transformation.apply(stats)
 	var muzzle: Node3D = mech.get_node("Visual/AimPivot/Muzzle")
-	# Set the transform BEFORE the body enters the physics space: a body added
-	# at the origin registers one frame inside the terrain (the origin is
-	# underground) and detonates at the shooter's feet.
-	projectile.position = muzzle.global_position
-	projectile.set_shooter(mech)
-	projectile.gravity_mult = stats["gravity_mult"]
-	projectile.bounces_left = stats["bounces"]
-	projectile.bounciness = stats["bounciness"]
-	get_tree().current_scene.add_child(projectile)
-	projectile.launch(Ballistics.launch_velocity(
-			mech.aim_angle, mech.facing(), power, stats["speed_min"], stats["speed_max"]))
-	projectile.exploded.connect(_on_projectile_exploded, CONNECT_ONE_SHOT)
+	var count: int = stats.get("projectile_count", 1)
+	var spread: float = stats.get("spread_degrees", 0.0)
+	var homing: float = stats.get("homing_strength", 0.0)
+	var target := _nearest_enemy(mech)
+	for i in count:
+		var projectile = PROJECTILE_SCENE.instantiate()
+		projectile.position = muzzle.global_position
+		projectile.set_shooter(mech)
+		projectile.gravity_mult = stats["gravity_mult"]
+		projectile.bounces_left = stats["bounces"]
+		projectile.bounciness = stats["bounciness"]
+		projectile.impact_stats = stats
+		if homing > 0.0 and target != null:
+			projectile.set_homing(target, homing)
+		get_tree().current_scene.add_child(projectile)
+		var angle: float = mech.aim_angle \
+				+ ProjectileScript.spread_offset(i, count, spread)
+		projectile.launch(Ballistics.launch_velocity(
+				angle, mech.facing(), power, stats["speed_min"], stats["speed_max"]))
+		projectile.exploded.connect(_on_projectile_exploded, CONNECT_ONE_SHOT)
+		_pending_shells += 1
 
 
-func _on_projectile_exploded(position: Vector3) -> void:
-	_resolve_impact.call_deferred(position)
+## Locked at launch: the guidance target (nearest opposing mech).
+func _nearest_enemy(shooter) -> Node:
+	var best: Node = null
+	var best_dist := INF
+	for entity in entities:
+		if entity == shooter:
+			continue
+		var dist: float = entity.global_position.distance_to(shooter.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			best = entity
+	return best
+
+
+func _on_projectile_exploded(position: Vector3, stats: Dictionary) -> void:
+	_pending_shells -= 1
+	var is_final := _pending_shells <= 0
+	_resolve_impact.call_deferred(position, stats, is_final)
 
 
 ## Runs deferred: the explosion signal arrives while the physics space is
 ## locked, and the sphere query below needs it unlocked.
-func _resolve_impact(position: Vector3) -> void:
+func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> void:
 	var fx = EXPLOSION_SCENE.instantiate()
-	var stats: Dictionary = _pending_stats
 	fx.blast_radius = stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS)
 	get_tree().current_scene.add_child(fx)
 	fx.global_position = position
@@ -235,12 +263,15 @@ func _resolve_impact(position: Vector3) -> void:
 
 	if terrain != null:
 		# Crater size scales with the weapon's terrain damage (S11: grenades
-		# dig, energy shots scorch).
+		# dig, energy shots scorch; S12 transformations layer on top).
 		var carve: float = stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS) \
 				* stats.get("terrain_damage_mult", 1.0)
 		terrain.apply_explosion(position, carve)
 
-	turn_manager.finish_resolution()
+	# Multi-shot (S12): every submunition resolves independently; the turn
+	# passes only after the LAST shell dies.
+	if is_final:
+		turn_manager.finish_resolution()
 
 
 ## MatchState.mech_health is the source of truth; the mech node gets a mirror.
