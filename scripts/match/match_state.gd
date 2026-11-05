@@ -118,6 +118,17 @@ func set_loadout(entity_name: String, weapons: Array) -> void:
 	active_weapon_index[entity_name] = 0
 
 
+## Direct slot arming (S15 AI weapon selection).
+func set_active_weapon(entity_name: String, slot: int) -> void:
+	var loadout: Array = weapon_loadouts.get(entity_name, [])
+	active_weapon_index[entity_name] = clampi(slot, 0, maxi(loadout.size() - 1, 0))
+
+
+## Match end (S15): the winner's display name goes into the result.
+func declare_winner(winner_name: String) -> void:
+	match_result = StringName("%s wins the match" % winner_name)
+
+
 ## Cycles to the next weapon; wraps around. Single-weapon loadouts are a no-op.
 func cycle_weapon(entity_name: String) -> void:
 	var loadout: Array = weapon_loadouts.get(entity_name, [])

@@ -26,10 +26,9 @@ const WEAPON_ROCKET := preload("res://data/weapons/rocket.tres")
 const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
 const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
 const ProjectileScript := preload("res://scripts/projectiles/projectile.gd")
+const AIDriverScript := preload("res://scripts/ai/ai_driver.gd")
 
 const CHARGE_TIME := 1.2
-## Placeholder AI think time before passing (S15 replaces this driver).
-const DUMMY_TURN_DELAY := 1.5
 ## Universal weapons (S11): the default loadout every chassis equips when its
 ## definition does not name a specific one.
 const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
@@ -38,7 +37,7 @@ const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
 
 var turn_manager
 var entities: Array[Node] = []
-var _dummy_wait := 0.0
+var _ai = null
 ## Shells in flight (S12 multi-shot): the turn resolves when the count
 ## reaches zero, no matter which shell dies first.
 var _pending_shells := 0
@@ -79,6 +78,11 @@ func setup(p_entities: Array) -> void:
 func _physics_process(delta: float) -> void:
 	if entities.is_empty() or turn_manager == null:
 		return
+	# Match over (S15): freeze — intents zeroed, turns stopped, result shown.
+	if turn_manager.state.match_result != &"":
+		for mech in entities:
+			_zero_intent(mech)
+		return
 	turn_manager.tick(delta)
 	var active: int = turn_manager.state.active_index
 	for i in entities.size():
@@ -88,7 +92,8 @@ func _physics_process(delta: float) -> void:
 		elif i == player_index:
 			_drive_player(mech, i, delta)
 		else:
-			_drive_dummy(mech, i, delta)
+			_drive_ai(mech, i, delta)
+	_consume_ai_fire()
 
 
 func _zero_intent(mech) -> void:
@@ -102,14 +107,40 @@ func _zero_intent(mech) -> void:
 	mech.anchored = false
 
 
-## Placeholder opponent (real AI is S15+): no movement, brief pause, pass.
-func _drive_dummy(mech, _index: int, delta: float) -> void:
-	_zero_intent(mech)
-	_dummy_wait += delta
-	if _dummy_wait >= DUMMY_TURN_DELAY:
-		_dummy_wait = 0.0
-		turn_manager.submit_action(EndTurnAction.new(),
-				turn_manager.state.active_index)
+## The AI opponent's driver (S15): the ai_driver state machine sets intent,
+## the match layer consumes its fire request through the shared release path.
+func _drive_ai(mech, index: int, delta: float) -> void:
+	if _ai == null:
+		_ai = AIDriverScript.new()
+	var enemies: Array = entities.filter(func(e): return e != mech)
+	_ai.update(mech, enemies, turn_manager.state, turn_manager, delta)
+
+
+## Shared release path for every driver (player + AI): submit the FireAction
+## and spawn the shell. Nobody else spawns projectiles.
+func _release_fire(mech, index: int, power: float) -> void:
+	var action = FireAction.new()
+	action.power = power
+	action.weapon_index = turn_manager.state.active_weapon_slot(
+			String(mech.display_name()))
+	if turn_manager.submit_action(action, index):
+		_spawn_projectile(mech, power)
+	mech.charge = 0.0
+
+
+## Hand-off from the AI driver: it asks for a release, the match layer fires.
+func _consume_ai_fire() -> void:
+	if _ai == null or _ai.fire_request < 0.0:
+		return
+	var power: float = _ai.fire_request
+	_ai.fire_request = -1.0
+	var ai_index: int = -1
+	for i in entities.size():
+		if i != player_index:
+			ai_index = i
+			break
+	if ai_index >= 0:
+		_release_fire(entities[ai_index], ai_index, power)
 
 
 func _drive_player(mech, index: int, delta: float) -> void:
@@ -153,13 +184,7 @@ func _drive_player(mech, index: int, delta: float) -> void:
 		if InputLayer.is_action_pressed("fire"):
 			mech.charge = minf(mech.charge + delta / CHARGE_TIME, 1.0)
 		elif InputLayer.is_action_just_released("fire") and mech.charge > 0.0:
-			var action = FireAction.new()
-			action.power = mech.charge
-			action.weapon_index = turn_manager.state.active_weapon_slot(
-					String(mech.display_name()))
-			if turn_manager.submit_action(action, index):
-				_spawn_projectile(mech, mech.charge)
-			mech.charge = 0.0
+			_release_fire(mech, index, mech.charge)
 
 		if InputLayer.is_action_just_pressed("cycle_weapon"):
 			turn_manager.state.cycle_weapon(String(mech.display_name()))
@@ -281,11 +306,20 @@ func _apply_damage(mech: Node, amount: float) -> void:
 	var entity_name := String(mech.display_name())
 	var new_health: float = turn_manager.state.apply_damage(entity_name, amount)
 	mech.sync_health(new_health)
+	# Minimal victory rule (S15): a chassis at zero health ends the match —
+	# the survivor takes the result. Full match flow arrives in S20.
+	if new_health <= 0.0:
+		for other_name in turn_manager.state.entity_names:
+			if other_name != entity_name:
+				turn_manager.state.declare_winner(other_name)
 
 
 func status_line() -> String:
 	if turn_manager == null or not turn_manager.state.started:
 		return "match not started"
+	# Match result (S15) takes over the line when the match ends.
+	if turn_manager.state.match_result != &"":
+		return String(turn_manager.state.match_result)
 	var s = turn_manager.state
 	if s.is_resolving():
 		return "turn %d | %s | resolving" % [s.turn_number, s.active_entity_name()]

@@ -5,6 +5,26 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-05 — S15 · First AI
+
+**Scope (planned):** per roadmap S15 — a functional AI opponent via **deterministic tactical reasoning, no ML**, driving the dummy entity through the SAME interfaces the player uses (TurnManager spending, FireAction, mech intent vars — implementation-guide §11's no-cheating rule is structural: the AI cannot touch health, positions, or physics). Pipeline per roadmap: **analyze → move → solve → aim → charge → fire** as a per-turn state machine in `scripts/ai/ai_driver.gd`: (1) walk into a 6–18m standoff band (walking also fixes facing; minimum face-time enforced), (2) **solve the shot**: wind-aware `Ballistics.simulate_flight` over candidate angles (30/45/60/75°) × powers (0.5/0.75/1.0) **per loadout weapon** — the S14 predictor finally gets its consumer — and pick the (weapon, angle, power) with the smallest miss distance (weapon selection ✓), (3) arm that weapon slot (new `MatchState.set_active_weapon`), set the barrel angle, (4) charge at the player's rate and release through the shared fire path (extracted `_release_fire` used by both drivers), (5) best-effort fire even when the solve is imperfect. Also the minimal **victory rule** the verification needs ("finish a match"): health ≤ 0 → `MatchState.declare_winner` sets `match_result` → the match layer freezes (intents zeroed, no more turns) and the HUD shows the result. True match FLOW (menus/rematch) stays S20. Solver cost ~27 simulations/turn ≈ instant; difficulty scaling (S18) = candidate counts + band tuning, recorded for later.
+
+**Done:**
+
+- `scripts/ai/ai_driver.gd` — per-turn state machine (move → fire → done) with reset on turn change; pure `solve_shot` (per-weapon effective stats incl. transformations, wind-aware candidate simulation, best-miss selection) and `move_axis_for` (standoff band) as headless-testable statics; fire hand-off via `fire_request` so the driver never spawns shells itself.
+- MatchController: `_drive_ai` replaces the placeholder passer; `_release_fire` extracted as the single submission path for BOTH drivers; `_consume_ai_fire` hand-off; match-over freeze at the top of `_physics_process`; `_apply_damage` declares the survivor the winner at 0 health.
+- MatchState: `set_active_weapon` (clamped) and `declare_winner`; HUD status line shows the match result when set.
+
+**Verification (roadmap S15 checklist):**
+
+- AI can **move** ✓ (band walking with energy spending), **select target** ✓ (nearest alive), **fire** ✓ (solve → arm weapon → charge → release), **damage player** ✓ (shells fly with wind + its weapon's stats), **finish a match** ✓ (declare_winner at 0 health + match freeze).
+- Tests **104/104 passed** — 7 new: solver lands within 3m on flat 10m/8m/14m targets, leftward solve with −1 facing, headwind solve still lands, band movement rule (advance/retreat/hold), declare_winner, slot arming with clamping. All prior suites green; import/smoke exit 0; CI green.
+- Known limits (by design, recorded): the AI ignores terrain shape when walking (it may fall into the ravine — physical, S16 adds positioning awareness), solvers sample 4 angles × 3 powers (S18 difficulty scales this), and the end-state "complete battle" needs the player to actually fight — the AI now gives as good as its solver allows.
+
+**Next:** S16 — AI Positioning (elevation, cover, escape routes, knockback risk — the AI starts demonstrating the game's positioning philosophy).
+
+---
+
 ## 2026-11-05 — S14 · Wind
 
 **Scope (planned):** per roadmap S14 — classic artillery depth without making aiming the whole game. **Wind = a 2D vector in the X–Y gameplay plane** (GunBound's screen-plane model): ±X is tail/headwind, the Y component is our "crosswind" (updraft/downdraft — a side-view game has no out-of-plane axis), magnitude = strength, capped at 5 m/s² against 30 gravity (meaningful, never dominating). Wind lives in MatchState `environmental_state` (architecture.md §3): re-rolled **every turn transition** from a seeded per-match RNG (deterministic given seed — replay-ready for S37), plus explicit `set_wind` for tests. Projectiles only (mechs are too heavy/grounded — GunBound convention). Ballistics gains pure flight math: `wind_step` (per-tick drift) and `simulate_flight` (numeric integration of gravity + wind — the wind-aware range/hangtime predictor the S15+ AI shot planner will reuse). Projectile applies wind each tick **before** homing steering, so guidance fights the wind. HUD turn line shows an 8-way wind arrow + strength — the player cannot play what they cannot see. Roadmap scenarios map to tests: tailwind extends range, headwind shortens it, "crosswind" (updraft) extends hangtime, changing wind re-rolls per turn.
