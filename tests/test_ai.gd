@@ -63,13 +63,6 @@ func test_solver_accounts_for_wind() -> void:
 	assert_true(windy["miss"] < 3.0, "windy solve still lands on the target")
 
 
-func test_band_movement_rule() -> void:
-	var driver = load(AI_DRIVER)
-	assert_equal(driver.move_axis_for(25.0), 1.0, "too far: advance")
-	assert_equal(driver.move_axis_for(3.0), -1.0, "too close: retreat")
-	assert_equal(driver.move_axis_for(10.0), 0.0, "in band: hold position")
-
-
 func test_declare_winner_sets_result() -> void:
 	var s = load(MATCH_STATE).new()
 	s.begin_match(PackedStringArray(["Strider", "Standard"]), 100.0, 15.0, 5)

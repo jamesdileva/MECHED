@@ -107,13 +107,13 @@ func _zero_intent(mech) -> void:
 	mech.anchored = false
 
 
-## The AI opponent's driver (S15): the ai_driver state machine sets intent,
+## The AI opponent's driver (S15/S16): the ai_driver state machine sets intent,
 ## the match layer consumes its fire request through the shared release path.
 func _drive_ai(mech, index: int, delta: float) -> void:
 	if _ai == null:
 		_ai = AIDriverScript.new()
 	var enemies: Array = entities.filter(func(e): return e != mech)
-	_ai.update(mech, enemies, turn_manager.state, turn_manager, delta)
+	_ai.update(mech, enemies, turn_manager.state, turn_manager, terrain, delta)
 
 
 ## Shared release path for every driver (player + AI): submit the FireAction

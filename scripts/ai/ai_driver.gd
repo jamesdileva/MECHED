@@ -10,6 +10,7 @@ extends RefCounted
 ## band tuning, not accuracy cheats.
 
 const Ballistics := preload("res://scripts/combat/ballistics.gd")
+const Positioning := preload("res://scripts/ai/ai_positioning.gd")
 
 const PREFERRED_MIN := 6.0
 const PREFERRED_MAX := 18.0
@@ -17,13 +18,15 @@ const SOLVE_ANGLES: Array = [30.0, 45.0, 60.0, 75.0]
 const SOLVE_POWERS: Array = [0.5, 0.75, 1.0]
 const CHARGE_TIME := 1.2
 ## Walking at least this long before firing guarantees facing has flipped.
-const MIN_FACE_TIME := 0.3
+const MIN_FACE_TIME := 0.4
 
 ## Turn state machine: move → fire → (idle until the turn ends).
 var phase := "move"
 var last_turn := -1
 var plan: Dictionary = {}
 var _face_time := 0.0
+## The tactical position chosen this turn (S16); NAN until chosen.
+var move_target_x := NAN
 ## Set when the driver wants the match layer to release a shot at this power;
 ## consumed (and reset to -1) by the match layer — the driver stays decoupled
 ## from projectile spawning.
@@ -34,12 +37,13 @@ func reset() -> void:
 	phase = "move"
 	plan = {}
 	_face_time = 0.0
+	move_target_x = NAN
 	fire_request = -1.0
 
 
 ## Per-tick driver update. Call only while this mech is the active entity and
-## the match is not over.
-func update(mech, enemies: Array, state, tm, delta: float) -> void:
+## the match is not over. `terrain` is the pure grid wrapper (or null).
+func update(mech, enemies: Array, state, tm, terrain, delta: float) -> void:
 	if state.turn_number != last_turn:
 		last_turn = state.turn_number
 		reset()
@@ -55,29 +59,38 @@ func update(mech, enemies: Array, state, tm, delta: float) -> void:
 		return
 	match phase:
 		"move":
-			_move_phase(mech, target, state, tm, delta)
+			_move_phase(mech, target, state, tm, terrain, delta)
 		"fire":
 			_fire_phase(mech, state, delta)
 		_:
 			pass
 
 
-func _move_phase(mech, target, state, tm, delta: float) -> void:
+func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
+	# S16: choose a tactical position once per turn and walk there —
+	# repositioning instead of immediately firing when a better spot exists.
+	if is_nan(move_target_x):
+		var walk_range: float = state.movement_energy_left
+		move_target_x = Positioning.choose_position(
+				mech.position.x, target.global_position, walk_range, terrain)["x"]
 	var to_target: float = target.global_position.x - mech.global_position.x
-	var dist := absf(to_target)
-	var in_band := dist <= PREFERRED_MAX and dist >= PREFERRED_MIN
-	if in_band and _face_time >= MIN_FACE_TIME:
-		plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0), target.global_position,
-				signf(to_target), state.wind, _loadout_stats(mech, state))
-		if plan.has("slot"):
-			state.set_active_weapon(String(mech.display_name()), plan["slot"])
-		mech.aim_angle = plan.get("angle", 45.0)
-		phase = "fire"
-		return
-	# Walk into the band — walking toward the target also flips facing.
-	# move_axis_for says advance (+1) or retreat (−1); the target's sign orients it.
-	mech.move_axis = signf(to_target) * move_axis_for(dist)
-	_face_time += delta
+	var at_position := absf(mech.position.x - move_target_x) < 0.5
+	if at_position:
+		# Face the target before solving: a short walk flips the visual yaw
+		# the launch direction comes from.
+		if _face_time >= MIN_FACE_TIME:
+			plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0),
+					target.global_position, signf(to_target), state.wind,
+					_loadout_stats(mech, state))
+			if plan.has("slot"):
+				state.set_active_weapon(String(mech.display_name()), plan["slot"])
+			mech.aim_angle = plan.get("angle", 45.0)
+			phase = "fire"
+			return
+		_face_time += delta
+		mech.move_axis = 1.0 if to_target > 0.0 else -1.0
+	else:
+		mech.move_axis = 1.0 if mech.position.x < move_target_x else -1.0
 	tm.spend_movement(tm.state.active_index,
 			absf(mech.move_axis) * mech.max_speed() * delta)
 
@@ -138,13 +151,3 @@ func _nearest_alive(mech, enemies: Array) -> Node:
 			best_dist = dist
 			best = enemy
 	return best
-
-
-## Standoff-band movement decision: push outward when crowded, retreat when
-## too close, hold otherwise. Pure — headless-testable.
-static func move_axis_for(horizontal_distance: float) -> float:
-	if horizontal_distance > PREFERRED_MAX:
-		return 1.0
-	if horizontal_distance < PREFERRED_MIN:
-		return -1.0
-	return 0.0

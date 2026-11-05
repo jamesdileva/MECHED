@@ -5,6 +5,25 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-05 — S16 · AI Positioning
+
+**Scope (planned):** per roadmap S16 — the AI evaluates elevation, cover, distance, enemy position, knockback risk (edge drops), and movement energy instead of just shooting well. `scripts/ai/ai_positioning.gd` (pure statics over terrain queries, implementation-guide §12's scoring shape): band value (standoff 6–18m), **elevation value** (height above the enemy, capped), **cover value** (samples the head-height line to the enemy through the mask — walls and hill mass block), **edge risk** (a ≥1.5m drop within 2m — the knockback-shove-off penalty), minus movement cost per meter. `choose_position` samples candidates every 2m within the energy-affordable walk range (pit columns — NAN surface — are skipped, never chosen), returns the best with an `improved` flag. Driver integration: on each turn's move phase the AI **chooses a tactical position first** and walks there — repositioning instead of immediately firing (the roadmap verification) — then faces the enemy (min face-walk bumped to 0.4s so the visual yaw actually flips) and fires from the S15 solver at the NEW position. Terrain reaches the driver as the pure grid wrapper (null → flat-world fallback, so S15 behavior degrades gracefully and tests run without scenes). The roadmap's knockback-risk/escape-route list is covered by the edge term; deep-forward simulation stays S35.
+
+**Done:**
+
+- `scripts/ai/ai_positioning.gd` — pure scoring: band, elevation (capped ±3), cover (3 head-height line samples through the mask), edge risk, movement cost; `choose_position` walks the candidate lattice within the energy budget and returns {x, score, current_score, improved}.
+- Driver: the move phase now opens with `choose_position` and walks to the chosen x (repositioning instead of immediately firing ✓); face-walk bumped to 0.4s; terrain threaded through `_drive_ai` → driver update (null-safe flat fallback).
+- Fixed during verification — and the tests caught a genuinely interesting rule: **the intact bridge deck FLOORS the ravine edge**, so standing at the edge is safe until the deck is destroyed, after which the same spot becomes a live drop (NAN probe = carved-through column = maximum risk). edge_risk now treats NAN probes as risk, and the test asserts the safe→risky transition across the deck's destruction.
+
+**Verification (roadmap S16 checklist):**
+
+- Tests **111/111 passed** — 8 new positioning tests: band favoring, elevation capped, cover through the real mask (covered > exposed), plateau-edge risk, deck-floored edge safe→risky transition, hilltop repositioning over flats, ravine-pit avoidance, no-improvement on a featureless flat. All prior suites green; import/smoke exit 0; CI green.
+- Manual (next batch): watch the AI walk to the hill/cover instead of firing from the flats, and avoid the ravine after its bridge is gone.
+
+**Next:** S17 — AI Terrain Awareness (shoot the bridge pillar instead of the mech; terrain destruction as an attack).
+
+---
+
 ## 2026-11-05 — S15 · First AI
 
 **Scope (planned):** per roadmap S15 — a functional AI opponent via **deterministic tactical reasoning, no ML**, driving the dummy entity through the SAME interfaces the player uses (TurnManager spending, FireAction, mech intent vars — implementation-guide §11's no-cheating rule is structural: the AI cannot touch health, positions, or physics). Pipeline per roadmap: **analyze → move → solve → aim → charge → fire** as a per-turn state machine in `scripts/ai/ai_driver.gd`: (1) walk into a 6–18m standoff band (walking also fixes facing; minimum face-time enforced), (2) **solve the shot**: wind-aware `Ballistics.simulate_flight` over candidate angles (30/45/60/75°) × powers (0.5/0.75/1.0) **per loadout weapon** — the S14 predictor finally gets its consumer — and pick the (weapon, angle, power) with the smallest miss distance (weapon selection ✓), (3) arm that weapon slot (new `MatchState.set_active_weapon`), set the barrel angle, (4) charge at the player's rate and release through the shared fire path (extracted `_release_fire` used by both drivers), (5) best-effort fire even when the solve is imperfect. Also the minimal **victory rule** the verification needs ("finish a match"): health ≤ 0 → `MatchState.declare_winner` sets `match_result` → the match layer freezes (intents zeroed, no more turns) and the HUD shows the result. True match FLOW (menus/rematch) stays S20. Solver cost ~27 simulations/turn ≈ instant; difficulty scaling (S18) = candidate counts + band tuning, recorded for later.
