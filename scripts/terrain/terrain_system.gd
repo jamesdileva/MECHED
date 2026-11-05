@@ -10,6 +10,8 @@ extends Node3D
 
 const TerrainGridScript := preload("res://scripts/terrain/terrain_grid.gd")
 const TerrainMesher := preload("res://scripts/terrain/terrain_mesher.gd")
+const TerrainLayout := preload("res://scripts/terrain/terrain_layout.gd")
+const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
 
 const CHUNK_CELLS := 32
 
@@ -21,6 +23,10 @@ const CHUNK_CELLS := 32
 @export var cell_size := 0.25
 
 var grid
+
+## Collapsible structures (S13): regions with anchor cells, built by the
+## layout; a structure whose anchors are all carved collapses.
+var structures: Array = []
 
 var _chunks: Dictionary = {}
 var _material: StandardMaterial3D
@@ -42,16 +48,33 @@ func _ready() -> void:
 	restore()
 
 
-## Carves a crater and rebuilds only the chunks it touched.
-## Returns the number of cells removed.
+## Carves a crater, rebuilds only the chunks it touched, then checks for
+## collapsed structures. Returns the number of cells removed.
 func apply_explosion(world_pos: Vector3, radius: float) -> int:
 	var removed: int = grid.destroy_circle(Vector2(world_pos.x, world_pos.y), radius)
 	if removed > 0:
 		_rebuild(_chunks_overlapping_circle(Vector2(world_pos.x, world_pos.y), radius))
+	var collapsed: Array = TerrainLayout.check_collapses(grid, structures)
+	for structure in collapsed:
+		_collapse_structure(structure)
 	return removed
 
 
-## Refills the initial ground and rebuilds every chunk.
+## A structure whose anchors are gone loses its cells and drops out of the
+## list; a single FX burst marks the collapse (S45 adds real debris).
+func _collapse_structure(structure: Dictionary) -> void:
+	TerrainLayout.fill_world_rect(grid, structure["region"], false)
+	structures.erase(structure)
+	_rebuild(_all_chunk_coords())
+	var fx = EXPLOSION_SCENE.instantiate()
+	fx.blast_radius = 1.5
+	get_tree().current_scene.add_child(fx)
+	fx.global_position = Vector3(TerrainLayout.structure_center(structure).x,
+			TerrainLayout.structure_center(structure).y, 0.0)
+
+
+## Refills the battlefield from the standard layout (S13) and rebuilds every
+## chunk.
 func restore() -> void:
 	grid.create(
 		int(round(world_width / cell_size)),
@@ -60,7 +83,7 @@ func restore() -> void:
 		-world_width * 0.5,
 		world_top_y,
 	)
-	grid.fill_ground(ground_top_y, ground_bottom_y)
+	structures = TerrainLayout.build_standard_layout(grid)
 	_rebuild(_all_chunk_coords())
 
 

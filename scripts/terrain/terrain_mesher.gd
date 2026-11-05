@@ -33,6 +33,17 @@ static func build_chunk(grid, chunk: Vector2i, chunk_cells: int) -> Dictionary:
 			var bottom_open: bool = not grid.is_solid(Vector2i(cx, cy + 1))
 			var left_open: bool = not grid.is_solid(Vector2i(cx - 1, cy))
 			var right_open: bool = not grid.is_solid(Vector2i(cx + 1, cy))
+			# Ramp smoothing (S13): when the neighbouring column's top is
+			# exactly one cell off, the staircase boundary becomes a 45-degree
+			# diagonal (walkable) instead of a vertical riser + flat step.
+			var lower_right: bool = top_open and right_open \
+					and grid.is_solid(Vector2i(cx + 1, cy + 1))
+			var lower_left: bool = top_open and left_open \
+					and grid.is_solid(Vector2i(cx - 1, cy + 1))
+			var higher_right: bool = top_open and right_open \
+					and grid.is_solid(Vector2i(cx + 1, cy - 1))
+			var higher_left: bool = top_open and left_open \
+					and grid.is_solid(Vector2i(cx - 1, cy - 1))
 			var grass: Color = TerrainGridScript.GRASS
 			var dirt: Color = TerrainGridScript.DIRT
 
@@ -41,22 +52,34 @@ static func build_chunk(grid, chunk: Vector2i, chunk_cells: int) -> Dictionary:
 					Vector3(x0, y_top, half), Vector3(x1, y_top, half),
 					Vector3(x1, y_bot, half), Vector3(x0, y_bot, half),
 					dirt)
-			if top_open:
+			# Top surface: diagonals replace the flat top (and the riser) at
+			# smoothed staircase boundaries; otherwise the usual flat top.
+			if top_open and not lower_right and not lower_left:
 				_quad(positions, colors,
 						Vector3(x0, y_top, half), Vector3(x1, y_top, half),
 						Vector3(x1, y_top, -half), Vector3(x0, y_top, -half),
+						grass)
+			if top_open and lower_right:
+				_quad(positions, colors,
+						Vector3(x0, y_top, half), Vector3(x1, y_top - cs, half),
+						Vector3(x1, y_top - cs, -half), Vector3(x0, y_top, -half),
+						grass)
+			if top_open and lower_left:
+				_quad(positions, colors,
+						Vector3(x1, y_top, half), Vector3(x0, y_top - cs, half),
+						Vector3(x0, y_top - cs, -half), Vector3(x1, y_top, -half),
 						grass)
 			if bottom_open:
 				_quad(positions, colors,
 						Vector3(x0, y_bot, -half), Vector3(x1, y_bot, -half),
 						Vector3(x1, y_bot, half), Vector3(x0, y_bot, half),
 						dirt)
-			if left_open:
+			if left_open and not lower_left and not higher_left:
 				_quad(positions, colors,
 						Vector3(x0, y_top, -half), Vector3(x0, y_bot, -half),
 						Vector3(x0, y_bot, half), Vector3(x0, y_top, half),
 						dirt)
-			if right_open:
+			if right_open and not lower_right and not higher_right:
 				_quad(positions, colors,
 						Vector3(x1, y_top, half), Vector3(x1, y_bot, half),
 						Vector3(x1, y_bot, -half), Vector3(x1, y_top, -half),

@@ -5,6 +5,34 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-05 — S13 · Terrain as Tactical Tool
+
+**Scope (planned):** per roadmap S13 — terrain becomes a weapon: situations where destroying ground beats hitting the enemy. The 2D mask already holds tunnels/overhangs, so this sprint adds three things. (1) **Layout builder** (`terrain_layout.gd`, pure): `build_standard_layout(grid)` shapes the battlefield in world-coord rects — a tiered hill with a **walkable tunnel** through it (high ground + cover + flanking route), a low **cover wall**, a **ravine** cut through the ground spanned by a flush **bridge**, and a **plateau with a cliff** face dropping into the ravine. (2) **Collapsible structures**: named regions with anchor cells — when ALL anchors are carved the region's cells collapse (cleared + rebuild + FX at the center); the bridge's pillar is the first one, so 2–3 shells on the pillar strand ground mechs (jetpacks cross ravines — a real tactical choice per weapon). (3) **Walkable ramps**: the mesher smooths 1-cell staircase boundaries into 45° diagonal top faces (visual + collision from the same vertices, riser suppressed), and the mech's floor_max_angle rises to ~55° so diagonals are climbable — hills/ramps become walkable routes instead of jump-gates. Existing per-cell side faces already handle cliffs (≥2-cell drops) correctly. MapDefinition-style map data is deferred to S21; this sprint's layout is the tactical proof.
+
+**Done:**
+
+- `scripts/terrain/terrain_layout.gd` — pure layout builder (`fill_world_rect` + `build_standard_layout` + `check_collapses` + `structure_center`). The battlefield now has: a tiered hill (0.25m steps, 0.5m treads) rising to a 4m plateau with a 2m-clearance **tunnel** through it, a low **cover wall** on the flats, a 6m **ravine** through the ground, a flush **bridge** over it on a 0.5m pillar (the first **collapsible structure**: 3 anchor cells — top/mid/bottom of the pillar), and a 1.5m **plateau with a cliff** over the ravine edge.
+- `TerrainSystem.apply_explosion` now runs the collapse check after every carve: all anchors gone → structure cells cleared, chunks rebuilt, FX burst at the structure center, structure removed from the list.
+- Mesher ramp smoothing: 1-cell staircase boundaries emit 45° diagonal top faces (grass, same vertices feed collision) and suppress the riser; ≥2-cell drops keep true cliff walls. Mech `floor_max_angle` raised to ~55° in mech.tscn so diagonals are walkable.
+- Fixed during verification: mesher edit had reverted the explicit bool types (the known `:=`-from-dynamic trap — parse guard caught it); a ravine test point sat inside the bridge pillar; both meser-scanning tests initially scanned the wrong chunk (vacuous pass/fail) — rewritten to collect riser/diagonal evidence per x-position.
+
+**Verification (roadmap S13 checklist — "situations where destroying terrain beats hitting the enemy"):**
+
+- The bridge: pillar sheared → deck drops → ground mechs lose the only dry crossing (jetpacks cross ravines; Siege Rocket's ×1.5 terrain dig shears the pillar fastest).
+- The tunnel: hide inside the hill to break line-of-sight arcs; the roof is carveable — bury the tunnel mouth.
+- The cover wall / hill / plateau: elevation and cover make *positioning* the counter-play, and every one of them is carveable.
+- Tests **89/89 passed** — 7 new layout tests: hill/tunnel existence, ravine/bridge/plateau, cover wall, full collapse on anchor loss, precision damage does NOT drop the bridge (weapon choice matters), staircase smoothing emits diagonals with zero risers at boundaries, cliffs keep risers and emit no diagonals. All prior suites green; import/smoke exit 0; CI green.
+- Known quirk: `fill_world_rect` includes the end cell (inclusive-end semantics) — consistent across the layout, documented here.
+- Manual (next batch): walk the tunnel, climb the hill ramps, blow the bridge while the dummy... stand on it; energy shot vs grenade crater contrast on the new features.
+
+**Next:** S14 — Wind (classic artillery depth: direction, strength, projectile influence).
+
+---
+
+## 2026-11-05 — S12 · Weapon Transformation
+
+**Scope (planned):** per roadmap S12 — the signature system: same base weapon, different behavior per mech (Pillar 3). `WeaponTransformation` Resource (base_weapon name + stat multipliers + two new behavior fields: projectile_count/spread_degrees for multi-shot, homing_strength for guidance) applied on top of S11's `effective()` stats. The mech's `WeaponModifier` gains a `transformations` array — S11's interim global multipliers remain as the baseline layer, transformations layer on top per weapon. The three Rocket transformations ship as data in `data/weapons/transformations/`: **Siege Rocket** (Bastion: ×1.4 damage, ×1.3 blast, ×1.5 terrain dig, ×0.75 speed — a slow sledgehammer), **Split Rocket** (Strider: 3 submunitions at 10° spread, ×0.5 damage each — risk/reward shotgun), **Guided Rocket** (Wraith: steers toward the nearest enemy with a capped turn rate, ×0.85 damage — trades raw punch for accuracy). Per-mech modifier files replace `siege_modifier.tres` (its multipliers were the S11 interim hook, documented as such). Spawn path becomes multi-shell: each submunition resolves its own damage/knockback/carve; the turn resolves only after the LAST shell dies (counter-based). Homing steering is a pure static function on the projectile (slerp with capped rate — no overshoot, speed preserved, base arc recognizable ✓). HUD shows the transformed name. Verification mapping: base recognizable + mech changes behavior + meaningful tactical choice = the three transformation stat sheets, executable headless.
+
 **Done:**
 
 - `scripts/weapons/weapon_transformation.gd` — base_weapon name, stat multipliers, and the two behavior fields multipliers can't express: `projectile_count`/`spread_degrees` (multi-shot) and `homing_strength` (capped-rate guidance); `apply(stats)` layers onto S11 modifier-scaled stats.
@@ -20,8 +48,6 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 - Manual (next batch): fire the Rocket as each chassis — Bastion's slow heavy shell, Strider's three-way spread, Wraith's shell curving toward the dummy; watch the HUD names.
 
 **Next:** S13 — Terrain as Tactical Tool (tunnels, cover, destructible structures — terrain becomes a weapon).
-
-**Done:**
 
 ---
 

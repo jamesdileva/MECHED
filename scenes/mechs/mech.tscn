@@ -21,6 +21,7 @@ size = Vector3(0.9, 0.25, 0.25)
 size = Vector3(1.6, 1.8, 1.2)
 
 [node name="Mech" type="CharacterBody3D"]
+floor_max_angle = 0.9599
 script = ExtResource("1_mech")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
