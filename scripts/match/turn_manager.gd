@@ -116,3 +116,5 @@ func end_turn(actor_index: int) -> void:
 	state.movement_energy_left = ENERGY_PER_TURN
 	state.turn_time_left = TURN_TIME
 	state.refill_fuel(state.active_entity_name())
+	# Wind re-rolls every turn (S14) — the "changing wind" artillery scenario.
+	state.roll_wind()

@@ -11,6 +11,9 @@ enum Phase { INACTIVE, MOVE, RESOLVING }
 # The ability phase inserts between them in S08+ (architecture.md §7).
 
 const STARTING_HEALTH := 100.0
+## Wind strength cap (S14): m/s² of drift against 30 gravity — meaningful,
+## never dominating.
+const WIND_MAX := 5.0
 
 var started := false
 var turn_number := 0
@@ -28,10 +31,16 @@ var fuel_max: Dictionary = {}
 ## armed slot. Every chassis can equip every weapon.
 var weapon_loadouts: Dictionary = {}
 var active_weapon_index: Dictionary = {}
+## Environmental state (architecture.md §3): wind as a 2D vector in the
+## gameplay plane (±X tail/headwind, Y updraft/downdraft); magnitude is
+## strength. Re-rolled every turn from the per-match seeded RNG.
+var wind := Vector2.ZERO
+var rng := RandomNumberGenerator.new()
 var match_result := &""
 
 
-func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: float) -> void:
+func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: float,
+		seed := -1) -> void:
 	started = true
 	turn_number = 1
 	entity_names = names
@@ -46,6 +55,11 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 	fuel_max.clear()
 	weapon_loadouts.clear()
 	active_weapon_index.clear()
+	if seed >= 0:
+		rng.seed = seed
+	else:
+		rng.randomize()
+	roll_wind()
 
 
 func active_entity_name() -> String:
@@ -122,6 +136,21 @@ func active_weapon(entity_name: String) -> Resource:
 	if loadout.is_empty():
 		return null
 	return loadout[active_weapon_slot(entity_name) % loadout.size()]
+
+
+## Direct wind set (tests and future map rules); magnitude is uncapped here —
+## rolls are capped by WIND_MAX.
+func set_wind(value: Vector2) -> void:
+	wind = value
+
+
+## Per-turn wind roll: random direction, capped strength (GunBound convention).
+## The per-match seeded RNG keeps rolls deterministic for replay.
+func roll_wind() -> Vector2:
+	var angle := rng.randf_range(0.0, TAU)
+	var strength := rng.randf_range(0.0, WIND_MAX)
+	wind = Vector2.from_angle(angle) * strength
+	return wind
 
 
 func entity_health(entity_name: String) -> float:

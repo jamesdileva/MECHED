@@ -11,6 +11,8 @@ extends RigidBody3D
 
 signal exploded(position: Vector3, stats: Dictionary)
 
+const Ballistics := preload("res://scripts/combat/ballistics.gd")
+
 ## Grace window during which the shell ignores its shooter — muzzle grazes
 ## (steep aim angles) must not detonate on the barrel that fired them.
 const SHOOTER_GRACE := 0.15
@@ -22,6 +24,9 @@ const SHOOTER_GRACE := 0.15
 var gravity_mult := 1.0
 var bounces_left := 0
 var bounciness := 0.0
+## Wind drift (S14), set at spawn from MatchState and applied every tick
+## BEFORE homing steering — guidance fights the wind.
+var wind_accel := Vector3.ZERO
 ## Stats of the fired weapon (already modifier- and transformation-scaled);
 ## the match layer reads them back at impact.
 var impact_stats: Dictionary = {}
@@ -44,6 +49,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if wind_accel != Vector3.ZERO:
+		linear_velocity = Ballistics.wind_step(linear_velocity, wind_accel, delta)
 	if _homing_strength > 0.0 and _homing_target != null \
 			and is_instance_valid(_homing_target):
 		var to_target: Vector3 = _homing_target.global_position - global_position

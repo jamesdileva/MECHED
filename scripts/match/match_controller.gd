@@ -192,6 +192,8 @@ func _spawn_projectile(mech, power: float) -> void:
 		projectile.gravity_mult = stats["gravity_mult"]
 		projectile.bounces_left = stats["bounces"]
 		projectile.bounciness = stats["bounciness"]
+		projectile.wind_accel = Vector3(
+				turn_manager.state.wind.x, turn_manager.state.wind.y, 0.0)
 		projectile.impact_stats = stats
 		if homing > 0.0 and target != null:
 			projectile.set_homing(target, homing)
@@ -287,6 +289,15 @@ func status_line() -> String:
 	var s = turn_manager.state
 	if s.is_resolving():
 		return "turn %d | %s | resolving" % [s.turn_number, s.active_entity_name()]
-	return "turn %d | %s | energy %.0f | timer %.1fs" % [
-		s.turn_number, s.active_entity_name(), s.movement_energy_left, s.turn_time_left,
+	return "turn %d | %s | energy %.0f | timer %.1fs | wind %s %.1f" % [
+		s.turn_number, s.active_entity_name(), s.movement_energy_left,
+		s.turn_time_left, wind_arrow(s.wind), s.wind.length(),
 	]
+
+
+## 8-way compass arrow for the wind vector (screen: +x right, +y up).
+func wind_arrow(wind: Vector2) -> String:
+	if wind.length() < 0.05:
+		return "·"
+	const ARROWS := ["→", "↗", "↑", "↖", "←", "↙", "↓", "↘"]
+	return ARROWS[wrapi(roundi(wind.angle() / (TAU / 8.0)), 0, 8)]

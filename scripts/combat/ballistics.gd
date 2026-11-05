@@ -40,6 +40,31 @@ static func range_on_ground(origin: Vector3, velocity: Vector3, ground_y := 0.0)
 	return absf(velocity.x) * time_of_flight(origin, velocity, ground_y)
 
 
+## One tick of wind drift (S14): a constant acceleration on the shell.
+static func wind_step(velocity: Vector3, wind: Vector3, delta: float) -> Vector3:
+	return velocity + wind * delta
+
+
+## Numeric flight integration with wind (S14) — the wind-aware counterpart to
+## the analytic helpers above. Returns {position, range, time} for the shot's
+## landing on y = ground_y. This is what the S15+ AI shot planner and any aim
+## preview consume; tests use it for the tail/head/crosswind scenarios.
+static func simulate_flight(origin: Vector3, velocity: Vector3, wind: Vector2,
+		dt: float, ground_y := 0.0, max_time := 30.0) -> Dictionary:
+	var pos := origin
+	var vel := velocity
+	var t := 0.0
+	while t < max_time:
+		vel.y -= MATCH_GRAVITY * dt
+		vel.x += wind.x * dt
+		vel.y += wind.y * dt
+		pos += vel * dt
+		t += dt
+		if pos.y <= ground_y:
+			break
+	return {"position": pos, "range": pos.x, "time": t}
+
+
 ## Full damage inside direct_radius, linear falloff to zero at radius.
 static func damage_falloff(distance: float, radius := EXPLOSION_RADIUS,
 		max_damage := MAX_DAMAGE, direct_radius := DIRECT_HIT_RADIUS) -> float:

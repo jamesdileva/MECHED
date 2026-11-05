@@ -5,6 +5,30 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-05 — S14 · Wind
+
+**Scope (planned):** per roadmap S14 — classic artillery depth without making aiming the whole game. **Wind = a 2D vector in the X–Y gameplay plane** (GunBound's screen-plane model): ±X is tail/headwind, the Y component is our "crosswind" (updraft/downdraft — a side-view game has no out-of-plane axis), magnitude = strength, capped at 5 m/s² against 30 gravity (meaningful, never dominating). Wind lives in MatchState `environmental_state` (architecture.md §3): re-rolled **every turn transition** from a seeded per-match RNG (deterministic given seed — replay-ready for S37), plus explicit `set_wind` for tests. Projectiles only (mechs are too heavy/grounded — GunBound convention). Ballistics gains pure flight math: `wind_step` (per-tick drift) and `simulate_flight` (numeric integration of gravity + wind — the wind-aware range/hangtime predictor the S15+ AI shot planner will reuse). Projectile applies wind each tick **before** homing steering, so guidance fights the wind. HUD turn line shows an 8-way wind arrow + strength — the player cannot play what they cannot see. Roadmap scenarios map to tests: tailwind extends range, headwind shortens it, "crosswind" (updraft) extends hangtime, changing wind re-rolls per turn.
+
+**Done:**
+
+- MatchState: `wind` + seeded `rng` + `WIND_MAX` (5.0) + `set_wind`/`roll_wind`; `begin_match` gained an optional seed param (default randomized) and rolls the opening wind; `TurnManager.end_turn` re-rolls (the "changing wind" scenario).
+- Ballistics: pure `wind_step` (per-tick drift) and `simulate_flight` (numeric gravity+wind integration → landing position/range/time — wind-aware prediction for tests and the future AI planner).
+- Projectile: `wind_accel` set at spawn from MatchState, applied every tick before homing steering (guidance fights the drift).
+- HUD turn line: `wind ↗ 3.2` — 8-way compass arrow + magnitude, via `wind_arrow` in the match controller.
+- Fixed during verification: the wind-spawn edit landed at the wrong indentation inside the multi-shot spawn loop (parse guard caught it before it could ship).
+
+**Verification (roadmap S14 checklist — mapped to tests):**
+
+- Tailwind carries farther, headwind shortens, "crosswind" (updraft) extends hangtime, downdraft drops sooner — four scenario tests over `simulate_flight`.
+- Zero-wind simulation converges on the analytic range (integration sanity).
+- Changing wind: deterministic-seed test proves the roll changes on turn transition; 50-roll bound check (never exceeds WIND_MAX); same-seed matches roll identical sequences (replay parity).
+- Tests **97/97 passed**; import/smoke exit 0; CI green.
+- Manual (next batch): read the HUD wind arrow, aim into a headwind, watch Guided Rockets curve against the drift.
+
+**Next:** S15 — First AI (the pipeline: analyze → positions → targets → weapon → shot → execute; a complete human-vs-AI battle becomes possible).
+
+---
+
 ## 2026-11-05 — S13 · Terrain as Tactical Tool
 
 **Scope (planned):** per roadmap S13 — terrain becomes a weapon: situations where destroying ground beats hitting the enemy. The 2D mask already holds tunnels/overhangs, so this sprint adds three things. (1) **Layout builder** (`terrain_layout.gd`, pure): `build_standard_layout(grid)` shapes the battlefield in world-coord rects — a tiered hill with a **walkable tunnel** through it (high ground + cover + flanking route), a low **cover wall**, a **ravine** cut through the ground spanned by a flush **bridge**, and a **plateau with a cliff** face dropping into the ravine. (2) **Collapsible structures**: named regions with anchor cells — when ALL anchors are carved the region's cells collapse (cleared + rebuild + FX at the center); the bridge's pillar is the first one, so 2–3 shells on the pillar strand ground mechs (jetpacks cross ravines — a real tactical choice per weapon). (3) **Walkable ramps**: the mesher smooths 1-cell staircase boundaries into 45° diagonal top faces (visual + collision from the same vertices, riser suppressed), and the mech's floor_max_angle rises to ~55° so diagonals are climbable — hills/ramps become walkable routes instead of jump-gates. Existing per-cell side faces already handle cliffs (≥2-cell drops) correctly. MapDefinition-style map data is deferred to S21; this sprint's layout is the tactical proof.
