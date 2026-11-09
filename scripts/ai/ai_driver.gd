@@ -11,6 +11,11 @@ extends RefCounted
 
 const Ballistics := preload("res://scripts/combat/ballistics.gd")
 const Positioning := preload("res://scripts/ai/ai_positioning.gd")
+const AIDifficultyScript := preload("res://scripts/ai/ai_difficulty.gd")
+
+## Aim clamp mirrored from mech.gd (noise must never exceed the barrel range).
+const AIM_MIN_DEG := -10.0
+const AIM_MAX_DEG := 90.0
 
 ## Shot-value scale (S17): direct damage in HP maps to a 0..4 tactical range
 ## so it competes honestly against the terrain-opportunity bonuses.
@@ -34,10 +39,18 @@ var plan: Dictionary = {}
 var _face_time := 0.0
 ## The tactical position chosen this turn (S16); NAN until chosen.
 var move_target_x := NAN
+## Difficulty profile (S18) — set by the match layer; empty falls back to
+## Normal.
+var difficulty: Dictionary = {}
 ## Set when the driver wants the match layer to release a shot at this power;
 ## consumed (and reset to -1) by the match layer — the driver stays decoupled
 ## from projectile spawning.
 var fire_request := -1.0
+
+
+func _profile() -> Dictionary:
+	return difficulty if not difficulty.is_empty() \
+			else AIDifficultyScript.profile_for("Normal")
 
 
 func reset() -> void:
@@ -74,12 +87,26 @@ func update(mech, enemies: Array, state, tm, terrain, delta: float) -> void:
 
 
 func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
-	# S16: choose a tactical position once per turn and walk there —
-	# repositioning instead of immediately firing when a better spot exists.
+	var prof := _profile()
+	# S16/S18: choose a tactical position once per turn (positioning-enabled
+	# profiles) and walk there — Easy falls back to the simple band-walk.
 	if is_nan(move_target_x):
-		var walk_range: float = state.movement_energy_left
-		move_target_x = Positioning.choose_position(
-				mech.position.x, target.global_position, walk_range, terrain)["x"]
+		if prof["positioning"] and terrain != null:
+			var walk_range: float = state.movement_energy_left
+			move_target_x = Positioning.choose_position(
+					mech.position.x, target.global_position, walk_range, terrain,
+					-27.0, 27.0, prof["positioning_step"])["x"]
+		else:
+			var to_target_x: float = target.global_position.x - mech.global_position.x
+			var dist := absf(to_target_x)
+			if dist > PREFERRED_MAX:
+				move_target_x = target.global_position.x \
+						- signf(to_target_x) * (PREFERRED_MIN + PREFERRED_MAX) * 0.5
+			elif dist < PREFERRED_MIN:
+				move_target_x = target.global_position.x \
+						+ signf(to_target_x) * (PREFERRED_MIN - dist + 1.0)
+			else:
+				move_target_x = mech.position.x
 	var to_target: float = target.global_position.x - mech.global_position.x
 	var at_position := absf(mech.position.x - move_target_x) < 0.5
 	if at_position:
@@ -90,12 +117,18 @@ func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
 					if terrain != null else NAN
 			var structures: Array = terrain.structures \
 					if terrain != null and "structures" in terrain else []
+			var value_terrain = terrain if prof["terrain_aware"] else null
 			plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0),
 					target.global_position, signf(to_target), state.wind,
-					_loadout_stats(mech, state), enemy_surface_y, terrain, structures)
+					_loadout_stats(mech, state), enemy_surface_y, value_terrain,
+					structures, prof["angles"], prof["powers"])
 			if plan.has("slot"):
 				state.set_active_weapon(String(mech.display_name()), plan["slot"])
-			mech.aim_angle = plan.get("angle", 45.0)
+			# Imperfect targeting (S18): noise draws from the per-match seeded
+			# RNG — misses feel organic without accuracy cheats.
+			var noise: float = prof["aim_noise_deg"]
+			mech.aim_angle = clampf(plan.get("angle", 45.0)
+					+ state.rng.randf_range(-noise, noise), AIM_MIN_DEG, AIM_MAX_DEG)
 			phase = "fire"
 			return
 		_face_time += delta
@@ -107,7 +140,14 @@ func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
 
 
 func _fire_phase(mech, state, delta: float) -> void:
-	mech.aim_angle = plan.get("angle", 45.0)
+	var prof := _profile()
+	mech.aim_angle = clampf(plan.get("angle", 45.0)
+			+ state.rng.randf_range(-prof["aim_noise_deg"], prof["aim_noise_deg"]),
+			AIM_MIN_DEG, AIM_MAX_DEG)
+	# Ability usage (S18): Normal+ plants the anchor while shelling — blast
+	# immunity is the reward for standing still. It drops when the turn ends.
+	if prof["uses_anchor"] and not mech.anchored:
+		mech.anchored = true
 	var power: float = plan.get("power", 1.0)
 	mech.charge = minf(mech.charge + delta / CHARGE_TIME, power)
 	if mech.charge >= power - 0.01:
@@ -177,12 +217,13 @@ static func _is_drop(terrain, x: float, surface_y: float) -> bool:
 ## the value reduces to direct damage, i.e. the S15 min-miss behavior.
 static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 		wind: Vector2, weapon_stats: Array, enemy_surface_y := NAN,
-		terrain = null, structures: Array = []) -> Dictionary:
+		terrain = null, structures: Array = [], angles: Array = SOLVE_ANGLES,
+		powers: Array = SOLVE_POWERS) -> Dictionary:
 	var best := {"value": -INF, "miss": INF, "slot": -1, "angle": 45.0, "power": 1.0}
 	for entry in weapon_stats:
 		var stats: Dictionary = entry["stats"]
-		for angle in SOLVE_ANGLES:
-			for power in SOLVE_POWERS:
+		for angle in angles:
+			for power in powers:
 				var vel: Vector3 = Ballistics.launch_velocity(
 						angle, dir_sign, power, stats["speed_min"], stats["speed_max"])
 				var result: Dictionary = Ballistics.simulate_flight(

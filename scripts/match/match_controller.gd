@@ -27,6 +27,7 @@ const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
 const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
 const ProjectileScript := preload("res://scripts/projectiles/projectile.gd")
 const AIDriverScript := preload("res://scripts/ai/ai_driver.gd")
+const AIDifficultyScript := preload("res://scripts/ai/ai_difficulty.gd")
 
 const CHARGE_TIME := 1.2
 ## Universal weapons (S11): the default loadout every chassis equips when its
@@ -34,6 +35,9 @@ const CHARGE_TIME := 1.2
 const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
 
 @export var player_index := 0
+## AI difficulty preset name (S18): "Easy" / "Normal" / "Hard" / "Expert".
+## Hard is the default so the S16/S17 behaviors ship enabled.
+@export var ai_difficulty := "Hard"
 
 var turn_manager
 var entities: Array[Node] = []
@@ -112,6 +116,7 @@ func _zero_intent(mech) -> void:
 func _drive_ai(mech, index: int, delta: float) -> void:
 	if _ai == null:
 		_ai = AIDriverScript.new()
+		_ai.difficulty = AIDifficultyScript.profile_for(ai_difficulty)
 	var enemies: Array = entities.filter(func(e): return e != mech)
 	_ai.update(mech, enemies, turn_manager.state, turn_manager, terrain, delta)
 

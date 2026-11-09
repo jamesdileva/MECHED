@@ -80,9 +80,11 @@ static func score_position(x: float, surface_y: float, enemy_pos: Vector3,
 
 ## Picks the best reachable standing spot. Returns
 ## {x, score, current_score, improved} — `improved` is the "reposition
-## instead of immediately firing" trigger.
+## instead of immediately firing" trigger. `step` is the candidate spacing
+## (S18 difficulty: coarser for Normal, finer for Expert).
 static func choose_position(current_x: float, enemy_pos: Vector3, walk_range: float,
-		terrain, bounds_min := -27.0, bounds_max := 27.0) -> Dictionary:
+		terrain, bounds_min := -27.0, bounds_max := 27.0,
+		step := CANDIDATE_STEP) -> Dictionary:
 	var current_score := -INF
 	var current_surface: float = terrain.query_surface_y(current_x) \
 			if terrain != null else 0.0
@@ -102,7 +104,7 @@ static func choose_position(current_x: float, enemy_pos: Vector3, walk_range: fl
 			if score > best_score + 0.001:
 				best_score = score
 				best_x = x
-		x += CANDIDATE_STEP
+		x += step
 	return {
 		"x": best_x,
 		"score": best_score,

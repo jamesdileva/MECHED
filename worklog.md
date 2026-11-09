@@ -5,6 +5,26 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-09 — S18 · AI Difficulty
+
+**Scope (planned):** per roadmap S18 — four behavioral levels as **pure configuration** (implementation-guide §13: never separate AI codebases), and difficulty improves *decisions*, never accuracy/damage cheats. `scripts/ai/ai_difficulty.gd`: four presets mapping to knobs the existing driver already understands — **Easy**: 1 angle × 1 power, 6° aim noise, no positioning, no terrain awareness, no abilities (the S15 baseline); **Normal**: 3×3 candidates, 2.5° noise, coarse positioning (4m steps), anchor usage, still direct-damage values; **Hard**: 5×4 candidates, 1° noise, fine positioning (2m), **terrain-aware shot values** (footing/collapse/shove — the S17 behavior lives here per the roadmap's own level descriptions); **Expert**: 7×6 candidates, 0° noise, 1m positioning steps. Aim noise draws from the per-match seeded RNG (deterministic replay preserved). `MatchController.ai_difficulty` export selects the preset (default **Hard**, so the S16/S17 behaviors ship enabled); `Positioning.choose_position` gains a step parameter. Driver structure unchanged — the knobs are data.
+
+**Done:**
+
+- `scripts/ai/ai_difficulty.gd` — the four presets + `profile_for` (deep-copied, unknown names fall back to Normal). Knobs: candidate angles/powers, aim noise (seeded RNG), positioning on/off + step, terrain-aware values, anchor usage.
+- Driver consumes the profile: candidate lists feed `solve_shot` (new optional angles/powers params), aim noise applies per tick in fire phase (clamped to the barrel range), positioning gates the choose_position path with the step, terrain-awareness gates the value-terrain (Easy/Normal see direct-damage-only values — the S17 behavior is the Hard line, matching the roadmap's level descriptions), Normal+ plants the anchor while shelling.
+- `MatchController.ai_difficulty` export (default "Hard" — S16/S17 ship enabled); `Positioning.choose_position` gained the step parameter.
+- `playtest.md` — the batched playtest checklist for S08–S18: how to swap chassis/difficulty (one-liners), what to check per sprint, and a "not built yet" section (no menu / mech select / match flow / victory screen / sound — S19–S20+, per the user's early notes).
+
+**Verification (roadmap S18 checklist):**
+
+- Tests **125/125 passed** — 8 new: all four presets load, unknown falls back to Normal, candidate counts and positioning steps rise monotonically, Easy is exactly the S15 baseline (no positioning/terrain/abilities + sloppy noise), terrain awareness is the Hard line, Expert has no damage/aim-assist knobs at all (the roadmap's no-cheats rule made structural), the controller defaults to Hard, and the solver honors single-candidate profiles exactly. Import/smoke exit 0; CI green.
+- Manual: the playtest.md checklist (this is the batched playtest build).
+
+**Next:** pause for the user's S08–S18 playtest. After that: S19 — Combat UI (health/energy/fuel/weapon/wind out of the debug HUD and into readable screens).
+
+---
+
 ## 2026-11-09 — S17 · AI Terrain Awareness
 
 **Scope (planned):** per roadmap S17 — the AI recognizes direct damage vs terrain destruction vs positioning opportunities, and the roadmap's example becomes real: *shoot the platform underneath them*. The S15 solver minimized miss distance; S12's multi-shot world already delivers per-shot impact positions, so the solver now **scores each simulated impact's tactical value** (`shot_value`, pure): (1) **direct damage** — the existing falloff, scaled to a 0–4 comparable range; (2) **footing destruction** — impact within blast reach of the enemy's feet drops them (+3); (3) **structure collapse** — the enemy stands on a collapsible region (the bridge!) and the blast reaches its anchors (+5 — the S13 pillar is suddenly a target); (4) **shove-off** — the enemy is near a live drop (S16's edge rule) and the blast lands beside them within knockback range (+3) — the classic artillery play of shelling the ground *beside* someone standing near a cliff. Solver flips from min-miss to max-value (tie-break: closer landing); with no terrain the value reduces to direct damage, so all S15 solver tests keep their behavior. Value scale: 40 damage ≈ 4.0, so a collapse (5.0) outranks a clean direct hit (4.0) but never a lucky full-strength direct — the AI prefers killing, and destroys terrain when killing isn't on the table. Verification = executable: enemy on the bridge → the pillar shot outscores the direct shot; enemy near a cliff out of damage range → the shove shot wins; enemy in the open → the direct shot wins.
