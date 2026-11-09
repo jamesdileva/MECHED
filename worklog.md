@@ -5,6 +5,21 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scenes/ui/combat_hud.tscn` + `scripts/ui/combat_hud.gd` — CanvasLayer HUD, presentation-only (reads MatchState via the match-controller group + the player mech node): turn banner (number, YOUR/ENEMY TURN, RESOLVING, match result) with a draining timer bar; player panel with HP numbers+bar (scales to definition max health), movement-energy bar, jetpack fuel bar (visible only for jetpack chassis), armed-weapon badge with transformation names, aim angle + power-charge readout, ANCHORED badge; enemy panel with name + HP bar; wind arrow + strength.
+- MatchState gained `health_max` (+`set_entity_max_health`/`entity_max_health`) so bars scale to each definition's max health; MatchController.setup records it.
+- `main.gd`: **F3 toggles the debug HUD** — the roadmap verification ("understand the combat state without debug information") is now directly testable by hand; the debug HUD remains as §17 dev tooling.
+
+**Verification (roadmap S19 checklist):**
+
+- Tests **128/128 passed** — 3 new: the HUD scene carries every required element (turn label, timer, wind, HP/energy/fuel bars, weapon, aim, anchor badge, enemy panel), main.tscn instances it, and MatchState tracks max health for bar scaling. All prior suites green; import/smoke exit 0; CI green.
+- Manual: the playtest.md §10 checklist — hide the debug HUD with F3 and read the whole fight from the UI.
+
+**Next:** pause for the user's S08–S19 playtest. After that: S20 — Match Flow (menu → mech select → battle → victory → rematch), which completes the prototype loop.
+
+---
+
 ## 2026-11-09 — S18 · AI Difficulty
 
 **Scope (planned):** per roadmap S18 — four behavioral levels as **pure configuration** (implementation-guide §13: never separate AI codebases), and difficulty improves *decisions*, never accuracy/damage cheats. `scripts/ai/ai_difficulty.gd`: four presets mapping to knobs the existing driver already understands — **Easy**: 1 angle × 1 power, 6° aim noise, no positioning, no terrain awareness, no abilities (the S15 baseline); **Normal**: 3×3 candidates, 2.5° noise, coarse positioning (4m steps), anchor usage, still direct-damage values; **Hard**: 5×4 candidates, 1° noise, fine positioning (2m), **terrain-aware shot values** (footing/collapse/shove — the S17 behavior lives here per the roadmap's own level descriptions); **Expert**: 7×6 candidates, 0° noise, 1m positioning steps. Aim noise draws from the per-match seeded RNG (deterministic replay preserved). `MatchController.ai_difficulty` export selects the preset (default **Hard**, so the S16/S17 behaviors ship enabled); `Positioning.choose_position` gains a step parameter. Driver structure unchanged — the knobs are data.

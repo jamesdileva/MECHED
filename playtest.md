@@ -16,9 +16,9 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 ## Not built yet — don't report as bugs
 
 - No main menu / mech select / map select / rematch — that's S20 (Match Flow). Restart = F5.
-- No combat HUD polish (health bars in-world, weapon icons) — debug HUD only until S19.
-- No victory screen beyond the HUD result line ("X wins the match" + freeze).
-- No sound, no tutorial, no mech-select UI.
+- No dedicated victory screen beyond the HUD result line ("X wins the match" + freeze).
+- No ability cooldown display yet — current abilities are stance/energy-gated (the ANCHORED badge shows state); cooldowns arrive with S23 abilities.
+- No sound, no tutorial.
 - AI difficulty is config-only right now (menu knob comes with S20+).
 
 ## Checklist
@@ -61,7 +61,18 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 - [ ] Reduce a mech to 0 HP → HUD shows "X wins the match" and the match freezes.
 
 ### 9. Performance
-- [ ] FPS in the HUD — report the number if it dips below 60 (esp. during/after explosions).
+- [ ] FPS in the debug HUD — report the number if it dips below 60 (esp. during/after explosions).
+
+### 10. Combat UI (S19) — the main HUD
+Press **F3** first to hide the debug HUD — then, per the roadmap verification, everything below should be readable from the combat UI alone:
+- [ ] Turn banner (top-center): turn number + YOUR TURN / ENEMY TURN / RESOLVING; timer bar drains under it.
+- [ ] Your panel (bottom-left): name + HP numbers and bar; **energy bar** drains as you walk/jump/dash and refills; **fuel bar** appears for the Wraith and drains in flight; armed weapon badge updates on Tab (incl. transformation names like [Siege Rocket]).
+- [ ] **Aim readout**: angle + power % while holding fire.
+- [ ] **ANCHORED badge** appears with E (Bastion) and vanishes on toggle/turn end.
+- [ ] Wind indicator (top-right): arrow + strength, changes each turn.
+- [ ] Enemy panel (top-right): name + HP bar tracks damage you deal.
+- [ ] Match end: the banner shows the result line.
+- [ ] F3 brings the debug HUD back (dev tool).
 
 ## Notes
 

@@ -23,6 +23,8 @@ var phase: int = Phase.INACTIVE
 var movement_energy_left := 0.0
 var turn_time_left := 0.0
 var mech_health: Dictionary = {}
+## Per-entity maximum health (from MechDefinitions, S19 HUD bars scale to it).
+var health_max: Dictionary = {}
 ## Per-entity jetpack fuel (S09): current and per-turn maximum. Entities
 ## without a jetpack simply have 0.
 var jetpack_fuel: Dictionary = {}
@@ -49,6 +51,7 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 	movement_energy_left = energy_per_turn
 	turn_time_left = turn_time
 	mech_health.clear()
+	health_max.clear()
 	for entity_name in names:
 		mech_health[entity_name] = STARTING_HEALTH
 	jetpack_fuel.clear()
@@ -95,6 +98,14 @@ func apply_damage(entity_name: String, amount: float) -> float:
 ## Direct initialization (definitions set per-entity max health at setup).
 func set_entity_health(entity_name: String, value: float) -> void:
 	mech_health[entity_name] = value
+
+
+func set_entity_max_health(entity_name: String, value: float) -> void:
+	health_max[entity_name] = value
+
+
+func entity_max_health(entity_name: String) -> float:
+	return health_max.get(entity_name, STARTING_HEALTH)
 
 
 ## Registers a jetpack and fills its tank (setup-time, per definition).

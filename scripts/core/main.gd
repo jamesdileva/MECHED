@@ -18,7 +18,10 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Debug tooling (implementation-guide §17) uses raw keys on purpose —
 	# it is developer-only and outside the device-agnostic action contract.
-	if event is InputEventKey and event.pressed and not event.echo \
-			and event.physical_keycode == KEY_F1:
-		for mech in get_tree().get_nodes_in_group("mech"):
-			mech.respawn()
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.physical_keycode == KEY_F1:
+			for mech in get_tree().get_nodes_in_group("mech"):
+				mech.respawn()
+		elif event.physical_keycode == KEY_F3:
+			# Hide the debug HUD to read the fight from the combat UI alone.
+			$DebugHUD.visible = not $DebugHUD.visible

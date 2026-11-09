@@ -67,6 +67,7 @@ func setup(p_entities: Array) -> void:
 		var max_health: float = entity.definition.max_health \
 				if entity.definition != null else turn_manager.state.STARTING_HEALTH
 		turn_manager.state.set_entity_health(entity_name, max_health)
+		turn_manager.state.set_entity_max_health(entity_name, max_health)
 		entity.sync_health(max_health)
 		if entity.definition != null and entity.definition.jetpack_fuel > 0.0:
 			turn_manager.state.set_fuel_limit(entity_name, entity.definition.jetpack_fuel)
