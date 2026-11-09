@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-09 — S19 · Combat UI
+
+**Scope (planned):** per roadmap S19 — a player can understand the entire combat state **without the debug HUD** (which becomes F3-toggleable, making the verification directly testable). `scenes/ui/combat_hud.tscn` + `combat_hud.gd` (CanvasLayer, presentation-only — reads MatchState through the match-controller group and the player mech node): turn banner (turn number, YOUR TURN / ENEMY TURN / RESOLVING / match result) with a draining timer bar; player panel (name + HP, movement-energy, jetpack-fuel bars when the chassis has one, armed weapon with its transformation name, aim angle + power-charge readout, ANCHORED badge); enemy panel (name + HP); wind indicator (8-way arrow + strength). Bars are ProgressBar + StyleBoxFlat fills; max health per entity comes from new `MatchState.health_max` (definitions' max_health recorded at setup). Roadmap's "ability cooldowns" deliberately rendered as ability **state**: current abilities are stance/energy-gated with no cooldown timers — a cooldown display arrives with S23's cooldown-bearing abilities (recorded here per docs discipline). Controller focus-navigation is display-irrelevant for a passive HUD and lands with S20's menus. The debug HUD stays as dev tooling (§17), hidden behind F3.
+
 **Done:**
 
 - `scenes/ui/combat_hud.tscn` + `scripts/ui/combat_hud.gd` — CanvasLayer HUD, presentation-only (reads MatchState via the match-controller group + the player mech node): turn banner (number, YOUR/ENEMY TURN, RESOLVING, match result) with a draining timer bar; player panel with HP numbers+bar (scales to definition max health), movement-energy bar, jetpack fuel bar (visible only for jetpack chassis), armed-weapon badge with transformation names, aim angle + power-charge readout, ANCHORED badge; enemy panel with name + HP bar; wind arrow + strength.
