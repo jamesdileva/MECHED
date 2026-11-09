@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-09 — S17 · AI Terrain Awareness
+
+**Scope (planned):** per roadmap S17 — the AI recognizes direct damage vs terrain destruction vs positioning opportunities, and the roadmap's example becomes real: *shoot the platform underneath them*. The S15 solver minimized miss distance; S12's multi-shot world already delivers per-shot impact positions, so the solver now **scores each simulated impact's tactical value** (`shot_value`, pure): (1) **direct damage** — the existing falloff, scaled to a 0–4 comparable range; (2) **footing destruction** — impact within blast reach of the enemy's feet drops them (+3); (3) **structure collapse** — the enemy stands on a collapsible region (the bridge!) and the blast reaches its anchors (+5 — the S13 pillar is suddenly a target); (4) **shove-off** — the enemy is near a live drop (S16's edge rule) and the blast lands beside them within knockback range (+3) — the classic artillery play of shelling the ground *beside* someone standing near a cliff. Solver flips from min-miss to max-value (tie-break: closer landing); with no terrain the value reduces to direct damage, so all S15 solver tests keep their behavior. Value scale: 40 damage ≈ 4.0, so a collapse (5.0) outranks a clean direct hit (4.0) but never a lucky full-strength direct — the AI prefers killing, and destroys terrain when killing isn't on the table. Verification = executable: enemy on the bridge → the pillar shot outscores the direct shot; enemy near a cliff out of damage range → the shove shot wins; enemy in the open → the direct shot wins.
+
 **Done:**
 
 - `ai_driver.shot_value(impact_pos, stats, enemy_pos, enemy_surface_y, terrain, structures)` — pure tactical value of a landing: direct damage (scaled 40hp → 4.0), footing destruction under the enemy's feet (+3), collapsible-structure collapse when the enemy stands on a region and the blast reaches its anchors (+5), directional shove-off (+3 — knockback pushes the target AWAY from the blast, so the blast must land on the side OPPOSITE the drop; `_is_drop` helper).
