@@ -5,6 +5,29 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `ai_driver.shot_value(impact_pos, stats, enemy_pos, enemy_surface_y, terrain, structures)` — pure tactical value of a landing: direct damage (scaled 40hp → 4.0), footing destruction under the enemy's feet (+3), collapsible-structure collapse when the enemy stands on a region and the blast reaches its anchors (+5), directional shove-off (+3 — knockback pushes the target AWAY from the blast, so the blast must land on the side OPPOSITE the drop; `_is_drop` helper).
+- `solve_shot` flipped from min-miss to **max tactical value** (tie-break: closer landing); with no terrain the value reduces to direct damage, so every S15 solver test kept its behavior unchanged. Enemy surface/structures/terrain threaded from the driver's fire branch.
+- Value-scale honesty: a full-strength direct hit (4.0) still beats repositioning-style bonuses (3.0); a collapse (5.0) beats a plain direct hit (7.0 incl. footing vs 8.0 pillar-only — the pillar-only collapse outranks a plain 40-damage hit on flat ground).
+
+**Fixed during verification — the tests shaped two real design decisions:**
+
+1. A direct hit on the enemy standing ON the bridge stacks damage + footing + collapse (12.0) and correctly outranks a pillar-only shot (8.0) — "when you can hit them AND drop them, do both". The meaningful comparison is pillar-collapse (8.0) vs plain direct hit (7.0): terrain manipulation wins when the direct hit is plain.
+2. The shove bonus needed DIRECTIONALITY: knockback pushes the target away from the blast, so the blast must land opposite the drop — a blast between the enemy and the edge pushes them to safety and earns nothing. First implementation had it inverted; the arena test caught it.
+
+**Verification (roadmap S17 checklist — the arena is the standard battlefield):**
+
+- Enemy ON the bridge: pillar-collapse shot (8.0) outranks a plain direct hit (7.0); a direct hit that ALSO collapses (12.0) outranks both — the AI discovered that the bridge is a target, not just a route.
+- Enemy at the plateau edge, 3.5m out (no damage possible): the behind-blast shove (3.0) beats any non-positioned shot (0.0).
+- Enemy in the open: direct damage dominates — no false terrain bonuses.
+- Tests **117/117 passed**; import/smoke exit 0; CI green.
+- Manual (next batch): stand on the bridge — the AI shells the pillar instead of you; stand at the plateau edge — it blasts the ground behind you to shove you off.
+
+**Next:** S18 — AI Difficulty (Easy/Normal/Hard/Expert as configuration: candidate counts, planning depth, imperfect aim — never damage cheats).
+
+---
+
 ## 2026-11-05 — S16 · AI Positioning
 
 **Scope (planned):** per roadmap S16 — the AI evaluates elevation, cover, distance, enemy position, knockback risk (edge drops), and movement energy instead of just shooting well. `scripts/ai/ai_positioning.gd` (pure statics over terrain queries, implementation-guide §12's scoring shape): band value (standoff 6–18m), **elevation value** (height above the enemy, capped), **cover value** (samples the head-height line to the enemy through the mask — walls and hill mass block), **edge risk** (a ≥1.5m drop within 2m — the knockback-shove-off penalty), minus movement cost per meter. `choose_position` samples candidates every 2m within the energy-affordable walk range (pit columns — NAN surface — are skipped, never chosen), returns the best with an `improved` flag. Driver integration: on each turn's move phase the AI **chooses a tactical position first** and walks there — repositioning instead of immediately firing (the roadmap verification) — then faces the enemy (min face-walk bumped to 0.4s so the visual yaw actually flips) and fires from the S15 solver at the NEW position. Terrain reaches the driver as the pure grid wrapper (null → flat-world fallback, so S15 behavior degrades gracefully and tests run without scenes). The roadmap's knockback-risk/escape-route list is covered by the edge term; deep-forward simulation stays S35.

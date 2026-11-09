@@ -12,6 +12,13 @@ extends RefCounted
 const Ballistics := preload("res://scripts/combat/ballistics.gd")
 const Positioning := preload("res://scripts/ai/ai_positioning.gd")
 
+## Shot-value scale (S17): direct damage in HP maps to a 0..4 tactical range
+## so it competes honestly against the terrain-opportunity bonuses.
+const DIRECT_DAMAGE_SCALE := 0.1
+const FOOTING_VALUE := 3.0
+const COLLAPSE_VALUE := 5.0
+const SHOVE_VALUE := 3.0
+
 const PREFERRED_MIN := 6.0
 const PREFERRED_MAX := 18.0
 const SOLVE_ANGLES: Array = [30.0, 45.0, 60.0, 75.0]
@@ -79,9 +86,13 @@ func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
 		# Face the target before solving: a short walk flips the visual yaw
 		# the launch direction comes from.
 		if _face_time >= MIN_FACE_TIME:
+			var enemy_surface_y: float = terrain.query_surface_y(target.position.x) \
+					if terrain != null else NAN
+			var structures: Array = terrain.structures \
+					if terrain != null and "structures" in terrain else []
 			plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0),
 					target.global_position, signf(to_target), state.wind,
-					_loadout_stats(mech, state))
+					_loadout_stats(mech, state), enemy_surface_y, terrain, structures)
 			if plan.has("slot"):
 				state.set_active_weapon(String(mech.display_name()), plan["slot"])
 			mech.aim_angle = plan.get("angle", 45.0)
@@ -105,12 +116,69 @@ func _fire_phase(mech, state, delta: float) -> void:
 		phase = "done"
 
 
-## Wind-aware shot solver: best (weapon, angle, power) by simulated miss
-## distance. Pure — headless-testable. `weapon_stats` entries are
-## {slot, stats} dictionaries in firing order.
+## Tactical value of a shell landing at impact_pos (S17): direct damage,
+## footing destruction under the enemy, collapsible-structure collapse, and
+## edge shove-off. Pure — headless-testable. This is what makes the AI shoot
+## the bridge pillar instead of the mech standing on it.
+static func shot_value(impact_pos: Vector3, stats: Dictionary, enemy_pos: Vector3,
+		enemy_surface_y: float, terrain, structures: Array) -> float:
+	var dist: float = impact_pos.distance_to(enemy_pos)
+	var radius: float = stats["explosion_radius"]
+	var value: float = Ballistics.damage_falloff(dist, radius,
+			stats["damage_max"], stats["direct_hit_radius"]) * DIRECT_DAMAGE_SCALE
+	# Footing destruction: a crater under the enemy's feet drops them.
+	if not is_nan(enemy_surface_y) \
+			and impact_pos.distance_to(Vector3(enemy_pos.x, enemy_surface_y, 0.0)) \
+					<= radius * 1.2:
+		value += FOOTING_VALUE
+	# Structure collapse: the enemy stands on a collapsible region and the
+	# blast reaches its anchors (the bridge pillar under their feet).
+	var grid = terrain.grid if terrain != null and "grid" in terrain else terrain
+	if grid != null and "cell_center" in grid:
+		for structure in structures:
+			var region: Rect2 = structure["region"]
+			if enemy_pos.x < region.position.x or enemy_pos.x > region.end.x:
+				continue
+			if structure["anchors"].is_empty():
+				continue
+			var anchor: Vector2 = structure["anchors"][0]
+			var anchor_cell: Vector2 = grid.cell_center(anchor.x, anchor.y)
+			var anchor_pos: Vector3 = Vector3(anchor_cell.x, anchor_cell.y, 0.0)
+			if impact_pos.distance_to(anchor_pos) <= radius + 1.0:
+				value += COLLAPSE_VALUE
+	# Shove-off: the enemy stands near a live drop and the blast lands on the
+	# side AWAY from the edge — knockback pushes them off. A blast between
+	# the enemy and the edge pushes them to safety, which earns nothing.
+	if terrain != null and Positioning.edge_risk(enemy_pos.x, enemy_surface_y, terrain) > 0.0:
+		if dist <= stats.get("knockback_radius", 5.0):
+			var enemy_surface: float = enemy_surface_y if not is_nan(enemy_surface_y) \
+					else enemy_pos.y
+			var drop_right: bool = _is_drop(terrain, enemy_pos.x + 2.0, enemy_surface)
+			var drop_left: bool = _is_drop(terrain, enemy_pos.x - 2.0, enemy_surface)
+			# Knockback pushes the target AWAY from the blast: to shove them
+			# into a drop on one side, the blast must land on the OPPOSITE side.
+			if drop_right and impact_pos.x < enemy_pos.x - 0.5:
+				value += SHOVE_VALUE
+			elif drop_left and impact_pos.x > enemy_pos.x + 0.5:
+				value += SHOVE_VALUE
+	return value
+
+
+## Is the column at world x a drop relative to surface_y (carved through, or
+## a step of EDGE_DROP_M or more down)?
+static func _is_drop(terrain, x: float, surface_y: float) -> bool:
+	var s: float = terrain.query_surface_y(x)
+	return is_nan(s) or surface_y - s >= Positioning.EDGE_DROP_M
+
+
+## Wind-aware shot solver: best (weapon, angle, power) by TACTICAL VALUE
+## (S17) — direct damage, terrain destruction, or shove-off, whichever the
+## simulated impact is worth most. Tie-break: closer landing. With no terrain
+## the value reduces to direct damage, i.e. the S15 min-miss behavior.
 static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
-		wind: Vector2, weapon_stats: Array) -> Dictionary:
-	var best := {"miss": INF, "slot": -1, "angle": 45.0, "power": 1.0}
+		wind: Vector2, weapon_stats: Array, enemy_surface_y := NAN,
+		terrain = null, structures: Array = []) -> Dictionary:
+	var best := {"value": -INF, "miss": INF, "slot": -1, "angle": 45.0, "power": 1.0}
 	for entry in weapon_stats:
 		var stats: Dictionary = entry["stats"]
 		for angle in SOLVE_ANGLES:
@@ -119,9 +187,13 @@ static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 						angle, dir_sign, power, stats["speed_min"], stats["speed_max"])
 				var result: Dictionary = Ballistics.simulate_flight(
 						origin, vel, wind, 1.0 / 60.0)
-				var miss: float = result["position"].distance_to(target_pos)
-				if miss < best["miss"]:
-					best = {"miss": miss, "slot": entry["slot"],
+				var impact: Vector3 = result["position"]
+				var miss: float = impact.distance_to(target_pos)
+				var value: float = shot_value(impact, stats, target_pos,
+						enemy_surface_y, terrain, structures)
+				if value > best["value"] + 0.001 \
+						or (absf(value - best["value"]) <= 0.001 and miss < best["miss"]):
+					best = {"value": value, "miss": miss, "slot": entry["slot"],
 							"angle": angle, "power": power}
 	return best
 
