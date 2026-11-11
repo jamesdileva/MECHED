@@ -3,9 +3,11 @@ extends "res://tests/test_base.gd"
 ## nodes the roadmap's verification depends on.
 
 
-func test_project_main_scene_is_configured() -> void:
+func test_project_main_scene_is_the_menu() -> void:
 	assert_equal(ProjectSettings.get_setting("application/run/main_scene", ""),
-			"res://scenes/main/main.tscn", "main scene setting")
+			"res://scenes/menus/main_menu.tscn", "match flow boots at the main menu")
+	assert_equal(ProjectSettings.get_setting("autoload/MatchSession", ""),
+			"*res://scripts/core/match_session.gd", "MatchSession autoload registered")
 
 
 func test_main_scene_loads_and_is_assembled() -> void:
@@ -20,6 +22,15 @@ func test_main_scene_loads_and_is_assembled() -> void:
 	assert_true(main.get_node_or_null("Mech") != null, "main has the player mech")
 	assert_true(main.get_node_or_null("DummyMech") != null, "main has the dummy opponent")
 	assert_true(main.get_node_or_null("DebugHUD") != null, "main has the debug HUD")
+	assert_true(main.get_node_or_null("CombatHUD") != null, "main instances the CombatHUD")
+	# Match flow (S20): the victory/defeat overlay with rematch + menu buttons.
+	var overlay: Node = main.get_node_or_null("VictoryOverlay")
+	assert_true(overlay != null, "main has the victory/defeat overlay")
+	if overlay != null:
+		assert_true(overlay.get_node_or_null("%RematchButton") is Button,
+				"overlay has a REMATCH button")
+		assert_true(overlay.get_node_or_null("%MenuButton") is Button,
+				"overlay has a MAIN MENU button")
 	main.free()
 
 

@@ -1,0 +1,49 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/map_select.gd" id="1_map"]
+
+[node name="MapSelect" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_map")
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -300.0
+offset_top = 70.0
+offset_right = 300.0
+offset_bottom = 114.0
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+text = "SELECT BATTLEFIELD"
+
+[node name="MapButtons" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = -60.0
+offset_right = 170.0
+offset_bottom = 0.0
+theme_override_constants/separation = 10
+
+[node name="MapButton" type="Button" parent="MapButtons"]
+custom_minimum_size = Vector2(0, 44)
+text = "CANYON"
+
+[node name="BackButton" type="Button" parent="."]
+unique_name_in_owner = true
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -80.0
+offset_right = 170.0
+offset_bottom = -40.0
+text = "BACK"

@@ -5,6 +5,28 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-10 — S20 · Match Flow
+
+**Scope (planned):** per roadmap S20 — the prototype loop: **Main Menu → Mech Select → Map Select → Battle → Victory/Defeat → Rematch**, all controller-navigable (focus-grabbed buttons; default ui_* joypad bindings cover dpad/stick navigation — S19's deferred focus-nav lands here). `MatchSession` autoload carries the picks across scenes (player chassis path, AI difficulty, map id). Menus: main menu (FIGHT/QUIT), mech select (the four chassis as focusable buttons, a data-driven stats detail panel, an AI-difficulty cycle button — Easy/Normal/Hard/Expert, replacing the config-file edit), map select (one map today — the layout list grows in S21). The battle scene reads `MatchSession` at setup (player chassis + difficulty; the dummy stays Standard) and gains a **Victory/Defeat overlay** (VICTORY/DEFEAT by winner, REMATCH = scene reload with the same session, MAIN MENU) grabbing focus when the match ends. One real bug this surfaces: picking Standard while the AI *is* Standard collides the MatchState display-name keys — setup now uniquifies duplicate chassis names ("Standard 2") via a mech display-name override, and a test pins independent health. `run/main_scene` moves to the menu; CI smoke-runs BOTH the menu and the battle scene directly.
+
+**Done:**
+
+- `scripts/core/match_session.gd` autoload + project.godot wiring: `run/main_scene` is now the main menu, `MatchSession` carries player_chassis / ai_difficulty / map_name across scenes.
+- Menu scenes + scripts: `main_menu` (FIGHT/QUIT, focus-grabbed), `mech_select` (four chassis buttons — data-driven detail panel showing HP/mass/speed + gadgets and per-chassis transformations, AI-difficulty cycle writing the session, BACK), `map_select` (CANYON start + BACK; the list grows in S21).
+- Battle scene: applies the session (player chassis + difficulty) at setup before match start; **Victory/Defeat overlay** (VICTORY/DEFEAT by `MatchState.winner`, REMATCH = scene reload with the same session, MAIN MENU) shown once at match end with focus grabbed.
+- Duplicate-chassis fix: display names (the MatchState keys) are uniqued in setup ("Standard 2") via a mech `display_name_override` — independent health/energy/loadouts even when both sides pick the same chassis.
+- Fixed during verification: the VictoryOverlay node was missing `unique_name_in_owner` (the battle-scene smoke run's node-not-found error caught it) — the new battle-scene smoke step in CI now covers exactly this class of flow bug.
+
+**Verification (roadmap S20 checklist):**
+
+- Tests **132/132 passed** — 5 new match-flow tests: all three menu scenes load with their required nodes, chassis entries resolve, duplicate-chassis names unique with independent health, session defaults. All prior suites green; import exit 0.
+- Smoke runs: the MENU boots clean AND the battle scene runs directly clean (both covered in CI now — the direct battle-scene run is what exposed the overlay flag bug).
+- Manual: the playtest.md §11 flow checklist (menu → select → difficulty → battle → overlay → rematch/menu, controller-navigable throughout).
+
+**Next:** the prototype loop is closed — the roadmap's Phase-0-style combat sandbox is now a small game. Post-S20 roadmap branches: S21 (Map System / data-driven maps), S22 (hazards), S23 (ability pass), S24 (balance sandbox) — sequencing with the user after their playtest.
+
+---
+
 ## 2026-11-09 — S19 · Combat UI
 
 **Scope (planned):** per roadmap S19 — a player can understand the entire combat state **without the debug HUD** (which becomes F3-toggleable, making the verification directly testable). `scenes/ui/combat_hud.tscn` + `combat_hud.gd` (CanvasLayer, presentation-only — reads MatchState through the match-controller group and the player mech node): turn banner (turn number, YOUR TURN / ENEMY TURN / RESOLVING / match result) with a draining timer bar; player panel (name + HP, movement-energy, jetpack-fuel bars when the chassis has one, armed weapon with its transformation name, aim angle + power-charge readout, ANCHORED badge); enemy panel (name + HP); wind indicator (8-way arrow + strength). Bars are ProgressBar + StyleBoxFlat fills; max health per entity comes from new `MatchState.health_max` (definitions' max_health recorded at setup). Roadmap's "ability cooldowns" deliberately rendered as ability **state**: current abilities are stance/energy-gated with no cooldown timers — a cooldown display arrives with S23's cooldown-bearing abilities (recorded here per docs discipline). Controller focus-navigation is display-irrelevant for a passive HUD and lands with S20's menus. The debug HUD stays as dev tooling (§17), hidden behind F3.

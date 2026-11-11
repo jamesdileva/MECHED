@@ -39,6 +39,8 @@ var active_weapon_index: Dictionary = {}
 var wind := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
 var match_result := &""
+## The display name of the winner (S20 victory overlay reads this).
+var winner := ""
 
 
 func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: float,
@@ -137,6 +139,7 @@ func set_active_weapon(entity_name: String, slot: int) -> void:
 
 ## Match end (S15): the winner's display name goes into the result.
 func declare_winner(winner_name: String) -> void:
+	winner = winner_name
 	match_result = StringName("%s wins the match" % winner_name)
 
 

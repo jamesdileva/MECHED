@@ -4,22 +4,23 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 
 ## How to run
 
-- Open the repo root in Godot and press F5, or run `godot --path .` from the repo folder.
-- **You pilot the Bastion by default.** The AI pilots a Standard chassis.
-- Read the debug HUD (top-left): match line (turn / active mech / energy / timer / wind), mech line (position / velocity / floor), combat line (both mechs' HP + fuel + armed weapon), input line.
+- Open the repo root in Godot and press F5, or run `godot --path .` from the repo folder — you land on the **main menu**.
+- Flow: FIGHT → pick your mech (stats panel updates on focus) → set AI DIFFICULTY → CANYON → battle. **REMATCH** / **MAIN MENU** appear on the victory overlay.
+- Controller: dpad/left stick walks the menus, A/Cross selects.
+- Read the debug HUD (top-left) for dev detail — or press **F3** to hide it and play off the combat UI alone.
 
 ## Two config swaps before playing (both one-liners)
 
-- **Change your mech**: `scenes/main/main.tscn` → Mech node → `definition = ExtResource("7_strider")` (or `"9_wraith"` / `"10_bastion"`). F5 again.
-- **Change AI difficulty**: `scripts/match/match_controller.gd` → `@export var ai_difficulty := "Hard"` → `"Easy"` / `"Normal"` / `"Expert"`.
+- **Change the AI's chassis**: `scenes/main/main.tscn` → DummyMech node → `definition = ExtResource(...)`.
+- **Change your mech / AI difficulty**: in-game now — mech select screen. (Defaults: you = Standard, AI = Standard on Normal.)
 
 ## Not built yet — don't report as bugs
 
-- No main menu / mech select / map select / rematch — that's S20 (Match Flow). Restart = F5.
-- No dedicated victory screen beyond the HUD result line ("X wins the match" + freeze).
+- No map variety yet (one battlefield; the map list grows in S21) — the map select step exists with a single entry.
+- No dedicated victory screen beyond the overlay ("VICTORY/DEFEAT" + rematch/menu).
 - No ability cooldown display yet — current abilities are stance/energy-gated (the ANCHORED badge shows state); cooldowns arrive with S23 abilities.
 - No sound, no tutorial.
-- AI difficulty is config-only right now (menu knob comes with S20+).
+- The AI always pilots a Standard chassis (AI chassis choice is a later concern).
 
 ## Checklist
 
@@ -73,6 +74,14 @@ Press **F3** first to hide the debug HUD — then, per the roadmap verification,
 - [ ] Enemy panel (top-right): name + HP bar tracks damage you deal.
 - [ ] Match end: the banner shows the result line.
 - [ ] F3 brings the debug HUD back (dev tool).
+
+### 11. Match flow (S20) — the full loop, controller-navigable
+- [ ] F5 boots to the **main menu**; FIGHT and QUIT both work (QUIT closes the game).
+- [ ] **Mech select**: all four chassis listed; the stats/detail panel updates as you move focus; picking **Standard for both sides** works (the AI shows as "Standard 2" — no shared HP).
+- [ ] **AI DIFFICULTY** button cycles Easy → Normal → Hard → Expert and sticks into the battle.
+- [ ] **Map select**: CANYON starts the battle; BACK returns to mech select.
+- [ ] In battle: your chosen chassis is what you're driving (HUD name + bars match).
+- [ ] **Victory/defeat**: end the AI (or die) → VICTORY/DEFEAT overlay with focus on REMATCH; REMATCH restarts with the same setup; MAIN MENU returns to the menu.
 
 ## Notes
 

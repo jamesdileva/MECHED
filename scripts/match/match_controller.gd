@@ -58,9 +58,20 @@ func setup(p_entities: Array) -> void:
 	entities.assign(p_entities)
 	turn_manager = TurnManagerScript.new()
 	var names := PackedStringArray()
+	var used := {}
 	for entity in entities:
 		entity.apply_definition(entity.definition)
-		names.append(String(entity.display_name()))
+		# Display names are the MatchState keys: duplicate chassis choices
+		# (both sides Standard, S20) must not collide.
+		var base := String(entity.display_name())
+		var unique := base
+		var n := 2
+		while used.has(unique):
+			unique = "%s %d" % [base, n]
+			n += 1
+		used[unique] = true
+		entity.display_name_override = unique
+		names.append(unique)
 	turn_manager.begin_match(names)
 	for entity in entities:
 		var entity_name := String(entity.display_name())

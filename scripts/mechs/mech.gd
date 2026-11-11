@@ -40,6 +40,10 @@ var anchored := false
 ## Health mirror — authoritative value lives in MatchState.mech_health.
 var health := 100.0
 
+## Set by the match layer when duplicate chassis names need uniquing (S20:
+## both sides picking Standard).
+var display_name_override := ""
+
 var _definition: Resource = null
 
 # Typed via get_node rather than a global class reference so headless script
@@ -103,6 +107,8 @@ func fuel_burn() -> float:
 
 
 func display_name() -> String:
+	if display_name_override != "":
+		return display_name_override
 	return _definition.display_name if _definition != null else String(name)
 
 

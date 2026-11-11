@@ -26,5 +26,8 @@ jobs:
       - name: Run tests
         run: godot --headless --path . -s res://tests/run_tests.gd
 
-      - name: Smoke run (main scene, one frame)
+      - name: Smoke run (main menu)
         run: godot --headless --path . --quit
+
+      - name: Smoke run (battle scene)
+        run: godot --headless --path . res://scenes/main/main.tscn --quit
