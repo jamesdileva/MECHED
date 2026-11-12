@@ -13,6 +13,11 @@ const TerrainMesher := preload("res://scripts/terrain/terrain_mesher.gd")
 const TerrainLayout := preload("res://scripts/terrain/terrain_layout.gd")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
 
+## S21: a MapDefinition resource wired by the battle scene. When set,
+## restore() builds the mask from its ops; when null, the S13 hardcoded
+## layout remains as the fallback.
+var map_definition: Resource = null
+
 const CHUNK_CELLS := 32
 
 @export var world_width := 60.0
@@ -73,8 +78,8 @@ func _collapse_structure(structure: Dictionary) -> void:
 			TerrainLayout.structure_center(structure).y, 0.0)
 
 
-## Refills the battlefield from the standard layout (S13) and rebuilds every
-## chunk.
+## Refills the battlefield (from the wired MapDefinition, or the S13 fallback
+## layout) and rebuilds every chunk.
 func restore() -> void:
 	grid.create(
 		int(round(world_width / cell_size)),
@@ -83,7 +88,10 @@ func restore() -> void:
 		-world_width * 0.5,
 		world_top_y,
 	)
-	structures = TerrainLayout.build_standard_layout(grid)
+	if map_definition != null:
+		structures = map_definition.build(grid)
+	else:
+		structures = TerrainLayout.build_standard_layout(grid)
 	_rebuild(_all_chunk_coords())
 
 

@@ -77,7 +77,12 @@ func set_solid(c: Vector2i, solid: bool) -> void:
 
 ## Carves a circular crater. Returns the number of cells removed.
 func destroy_circle(center: Vector2, radius: float) -> int:
-	var removed := 0
+	return fill_circle(center, radius, false)
+
+
+## Fills or clears a circular region. Returns the number of cells changed.
+func fill_circle(center: Vector2, radius: float, solid: bool) -> int:
+	var changed := 0
 	# Row indices run top-to-bottom (inverted vs world y), so min/max the
 	# bounding box per axis — a plain lo..hi range is empty for any box that
 	# descends in world space.
@@ -87,13 +92,15 @@ func destroy_circle(center: Vector2, radius: float) -> int:
 	var cy1 := mini(maxi(lo.y, hi.y) + 1, rows)
 	var cx0 := maxi(mini(lo.x, hi.x), 0)
 	var cx1 := mini(maxi(lo.x, hi.x) + 1, width)
+	var target := 1 if solid else 0
 	for cy in range(cy0, cy1):
 		for cx in range(cx0, cx1):
 			var c := Vector2i(cx, cy)
-			if is_solid(c) and cell_center(cx, cy).distance_to(center) <= radius:
-				cells[cy * width + cx] = 0
-				removed += 1
-	return removed
+			if cells[cy * width + cx] != target \
+					and cell_center(cx, cy).distance_to(center) <= radius:
+				cells[cy * width + cx] = target
+				changed += 1
+	return changed
 
 
 ## Topmost solid cell center's y in the column under world x, or NO_SURFACE.

@@ -1,0 +1,80 @@
+[gd_resource type="Resource" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
+[ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
+
+[sub_resource type="Resource" id="op_ground"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-30, -4, 60, 4)
+solid = true
+
+[sub_resource type="Resource" id="op_hill_staircase"]
+script = ExtResource("2_op")
+kind = "staircase"
+start_x = -26.0
+base_y = 0.0
+base_height = 0.0
+step_width = 0.5
+step_height = 0.25
+step_count = 16
+solid = true
+
+[sub_resource type="Resource" id="op_hilltop"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-18, 0, 4, 4)
+solid = true
+
+[sub_resource type="Resource" id="op_tunnel"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-22.5, 0, 7, 2)
+solid = false
+
+[sub_resource type="Resource" id="op_wall"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(7, 0, 0.5, 1.6)
+solid = true
+
+[sub_resource type="Resource" id="op_ravine"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(18, -4, 6, 4)
+solid = false
+
+[sub_resource type="Resource" id="op_plateau"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(24.5, 0, 4.5, 1.5)
+solid = true
+
+[sub_resource type="Resource" id="op_deck"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(17, -0.5, 8, 0.5)
+solid = true
+
+[sub_resource type="Resource" id="op_pillar"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(20.75, -4, 0.5, 3.5)
+solid = true
+
+[sub_resource type="Resource" id="struct_bridge"]
+script = ExtResource("3_struct")
+structure_name = "bridge"
+region = Rect2(17, -0.5, 8, 0.5)
+anchors = PackedVector2Array(21, -0.75, 21, -2.5, 21, -3.75)
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Canyon"
+terrain_ops = [SubResource("op_ground"), SubResource("op_hill_staircase"), SubResource("op_hilltop"), SubResource("op_tunnel"), SubResource("op_wall"), SubResource("op_ravine"), SubResource("op_plateau"), SubResource("op_deck"), SubResource("op_pillar")]
+structures = [SubResource("struct_bridge")]
+spawn_points = PackedVector3Array(0, 3, 0, 12, 7, 0)
+wind_max = 5.0
+bounds_min_x = -27.0
+bounds_max_x = 27.0

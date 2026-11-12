@@ -48,6 +48,9 @@ var _pending_shells := 0
 ## Destructible terrain (terrain_system.gd), wired by Main. Craters are carved
 ## at every projectile impact before the turn resolves.
 var terrain = null
+## The battle's MapDefinition (S21): wind rules apply at setup; spawns and
+## bounds are applied by the battle scene.
+var map_definition: Resource = null
 
 
 ## Wires the entity list (index = turn order) and begins the match.
@@ -73,6 +76,9 @@ func setup(p_entities: Array) -> void:
 		entity.display_name_override = unique
 		names.append(unique)
 	turn_manager.begin_match(names)
+	# Map wind rules (S21): the definition caps the per-turn wind roll.
+	if map_definition != null:
+		turn_manager.state.wind_max = map_definition.wind_max
 	for entity in entities:
 		var entity_name := String(entity.display_name())
 		var max_health: float = entity.definition.max_health \

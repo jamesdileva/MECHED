@@ -16,7 +16,7 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 
 ## Not built yet — don't report as bugs
 
-- No map variety yet (one battlefield; the map list grows in S21) — the map select step exists with a single entry.
+- Map select now lists three battlefields, but they share one tileset/visual style (S22 hazards and S45 visuals differentiate them further).
 - No dedicated victory screen beyond the overlay ("VICTORY/DEFEAT" + rematch/menu).
 - No ability cooldown display yet — current abilities are stance/energy-gated (the ANCHORED badge shows state); cooldowns arrive with S23 abilities.
 - No sound, no tutorial.
@@ -75,13 +75,14 @@ Press **F3** first to hide the debug HUD — then, per the roadmap verification,
 - [ ] Match end: the banner shows the result line.
 - [ ] F3 brings the debug HUD back (dev tool).
 
-### 11. Match flow (S20) — the full loop, controller-navigable
+### 11. Match flow (S20/S21) — the full loop, controller-navigable
 - [ ] F5 boots to the **main menu**; FIGHT and QUIT both work (QUIT closes the game).
 - [ ] **Mech select**: all four chassis listed; the stats/detail panel updates as you move focus; picking **Standard for both sides** works (the AI shows as "Standard 2" — no shared HP).
 - [ ] **AI DIFFICULTY** button cycles Easy → Normal → Hard → Expert and sticks into the battle.
-- [ ] **Map select**: CANYON starts the battle; BACK returns to mech select.
+- [ ] **Map select lists three battlefields**: CANYON (the classic layout), **FLOATING ISLANDS** (islands over the void — falls respawn you, strong wind, mind the gaps), **INDUSTRIAL RUINS** (tower + steps, broken-floor pit, a 4m-high scaffold deck you can shell off its anchors).
+- [ ] In battle: the chosen map is what loads — spawns differ per map (islands drop you onto slabs, ruins spread you wide).
 - [ ] In battle: your chosen chassis is what you're driving (HUD name + bars match).
-- [ ] **Victory/defeat**: end the AI (or die) → VICTORY/DEFEAT overlay with focus on REMATCH; REMATCH restarts with the same setup; MAIN MENU returns to the menu.
+- [ ] **Victory/defeat**: end the AI (or die) → VICTORY/DEFEAT overlay with focus on REMATCH; REMATCH restarts with the same setup AND map; MAIN MENU returns to the menu.
 
 ## Notes
 

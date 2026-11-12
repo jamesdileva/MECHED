@@ -12,7 +12,7 @@ enum Phase { INACTIVE, MOVE, RESOLVING }
 
 const STARTING_HEALTH := 100.0
 ## Wind strength cap (S14): m/s² of drift against 30 gravity — meaningful,
-## never dominating.
+## never dominating. Maps override the instance value (S21 wind rules).
 const WIND_MAX := 5.0
 
 var started := false
@@ -38,6 +38,8 @@ var active_weapon_index: Dictionary = {}
 ## strength. Re-rolled every turn from the per-match seeded RNG.
 var wind := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
+## Per-map wind cap (S21 wind rules); the const WIND_MAX is the default.
+var wind_max := WIND_MAX
 var match_result := &""
 ## The display name of the winner (S20 victory overlay reads this).
 var winner := ""
@@ -169,11 +171,12 @@ func set_wind(value: Vector2) -> void:
 	wind = value
 
 
-## Per-turn wind roll: random direction, capped strength (GunBound convention).
-## The per-match seeded RNG keeps rolls deterministic for replay.
+## Per-turn wind roll: random direction, capped by the map's wind_max
+## (GunBound convention). The per-match seeded RNG keeps rolls deterministic
+## for replay.
 func roll_wind() -> Vector2:
 	var angle := rng.randf_range(0.0, TAU)
-	var strength := rng.randf_range(0.0, WIND_MAX)
+	var strength := rng.randf_range(0.0, wind_max)
 	wind = Vector2.from_angle(angle) * strength
 	return wind
 

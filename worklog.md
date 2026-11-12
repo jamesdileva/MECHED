@@ -5,6 +5,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/terrain/map_definition.gd` / `map_op.gd` / `map_structure.gd` — maps as Resource data: ops (rect / circle / staircase fills), structures (region + world anchors → cell coords at build), spawn points (player + AI), per-map wind cap, and mech bounds.
+- Terrain grid gained `fill_circle` (destroy_circle now delegates to it); `TerrainSystem.restore()` builds from the wired MapDefinition, keeping the S13 layout as the null fallback; `MatchState.wind_max` is a per-map instance value; mech movement bounds are map-driven (`apply_map_bounds`).
+- Three battlefields authored as data in `data/maps/`: **Canyon** (the S13 layout as ops), **Floating Islands** (four islands over a real void — no ground, falls respawn, wind 6.5, gaps that demand dashes/jetpacks), **Industrial Ruins** (ruined building with a walkable roof-tunnel, a broken-floor pit, a tiered tower with walk-up steps, and a 10m **scaffold deck** 4m up — a collapsible structure with two anchors).
+- Map select populates its buttons from the map list; MatchSession carries `map_path`; the battle scene applies the map (terrain ops, spawns, wind cap, bounds) before match setup.
+- Fixed during verification: `build_onto_new_grid` sized the grid from mech BOUNDS (±27) instead of the fixed 60m world (±30) — the Canyon byte-equality test caught it; the Industrial "broken floor" originally carved *below* the surface (invisible from above) and now opens a real hole in the ground.
+
+**Verification (roadmap S21 checklist — the same match system loads all three without code changes):**
+
+- Tests **140/140 passed** — 8 new map tests: all three load+build; **Canyon ops reproduce the S13 layout byte-for-byte** (mask-equality test — the playtest baseline is provably unchanged); Floating Islands have islands + real void below; Industrial Ruins have the tower/steps/pit/scaffold + structure; every map defines two spawns above the kill plane and never buried in the mask; per-map wind caps (islands blow hardest); anchors build to cell coords. Import/smoke exit 0 for BOTH scenes; CI green.
+- Manual: pick each map from map select — islands change how you cross, ruins' scaffold is a high-ground death trap when its anchors go.
+
+**Next:** pause for the user's S08–S21 playtest (playtest.md updated). Roadmap continues with S22 — Environmental Hazards (prototype the list, keep only what creates decisions).
+
+---
+
 ## 2026-11-10 — S20 · Match Flow
 
 **Scope (planned):** per roadmap S20 — the prototype loop: **Main Menu → Mech Select → Map Select → Battle → Victory/Defeat → Rematch**, all controller-navigable (focus-grabbed buttons; default ui_* joypad bindings cover dpad/stick navigation — S19's deferred focus-nav lands here). `MatchSession` autoload carries the picks across scenes (player chassis path, AI difficulty, map id). Menus: main menu (FIGHT/QUIT), mech select (the four chassis as focusable buttons, a data-driven stats detail panel, an AI-difficulty cycle button — Easy/Normal/Hard/Expert, replacing the config-file edit), map select (one map today — the layout list grows in S21). The battle scene reads `MatchSession` at setup (player chassis + difficulty; the dummy stays Standard) and gains a **Victory/Defeat overlay** (VICTORY/DEFEAT by winner, REMATCH = scene reload with the same session, MAIN MENU) grabbing focus when the match ends. One real bug this surfaces: picking Standard while the AI *is* Standard collides the MatchState display-name keys — setup now uniquifies duplicate chassis names ("Standard 2") via a mech display-name override, and a test pins independent health. `run/main_scene` moves to the menu; CI smoke-runs BOTH the menu and the battle scene directly.

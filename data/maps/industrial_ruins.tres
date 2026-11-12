@@ -1,0 +1,99 @@
+[gd_resource type="Resource" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
+[ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
+
+[sub_resource type="Resource" id="op_ground"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-30, -4, 60, 4)
+solid = true
+
+[sub_resource type="Resource" id="op_wall_west"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-18, 0, 0.5, 3)
+solid = true
+
+[sub_resource type="Resource" id="op_wall_east"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-15, 0, 0.5, 3)
+solid = true
+
+[sub_resource type="Resource" id="op_roof"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-18.5, 2.75, 4, 0.5)
+solid = true
+
+[sub_resource type="Resource" id="op_rubble_a"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-8, 0, 2, 1)
+solid = true
+
+[sub_resource type="Resource" id="op_rubble_b"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-6, 0, 2, 2)
+solid = true
+
+[sub_resource type="Resource" id="op_broken_floor"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(0, -2, 3, 2)
+solid = false
+
+[sub_resource type="Resource" id="op_tower"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(10, 0, 2, 4)
+solid = true
+
+[sub_resource type="Resource" id="op_step_b"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(12, 0, 1.5, 3)
+solid = true
+
+[sub_resource type="Resource" id="op_step_c"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(13.5, 0, 1.5, 2)
+solid = true
+
+[sub_resource type="Resource" id="op_step_d"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(15, 0, 1.5, 1)
+solid = true
+
+[sub_resource type="Resource" id="op_east_wall"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(22, 0, 0.5, 4)
+solid = true
+
+[sub_resource type="Resource" id="op_deck"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(12, 3.75, 10, 0.5)
+solid = true
+
+[sub_resource type="Resource" id="struct_scaffold"]
+script = ExtResource("3_struct")
+structure_name = "scaffold"
+region = Rect2(12, 3.75, 10, 0.5)
+anchors = PackedVector2Array(14, 4, 20, 4)
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Industrial Ruins"
+terrain_ops = [SubResource("op_ground"), SubResource("op_wall_west"), SubResource("op_wall_east"), SubResource("op_roof"), SubResource("op_rubble_a"), SubResource("op_rubble_b"), SubResource("op_broken_floor"), SubResource("op_tower"), SubResource("op_step_b"), SubResource("op_step_c"), SubResource("op_step_d"), SubResource("op_east_wall"), SubResource("op_deck")]
+structures = [SubResource("struct_scaffold")]
+spawn_points = PackedVector3Array(-24, 3, 0, 24, 3, 0)
+wind_max = 5.0
+bounds_min_x = -27.0
+bounds_max_x = 27.0

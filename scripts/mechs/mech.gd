@@ -131,6 +131,15 @@ func max_speed() -> float:
 	return _movement.max_speed
 
 
+## Map-driven movement bounds (S21): the definition's limits replace the
+## controller defaults.
+func apply_map_bounds(map_definition: Resource) -> void:
+	if map_definition == null:
+		return
+	_movement.bounds_min_x = map_definition.bounds_min_x
+	_movement.bounds_max_x = map_definition.bounds_max_x
+
+
 func sync_health(value: float) -> void:
 	health = value
 
