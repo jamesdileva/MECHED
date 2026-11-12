@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-12 — S21 · Map System
+
+**Scope (planned):** per roadmap S21 — data-driven maps; the same match system loads all three without code changes. `MapDefinition` Resource (display_name, terrain ops list, structures, spawn points, wind cap, mech bounds) + `MapOp` (rect / circle / staircase fill primitives) and `MapStructure` (region + world anchors, built to cell coords) — terrain, spawns, wind rules, boundaries, and structures are all data in `data/maps/*.tres`. `TerrainSystem.restore()` builds from the definition when one is wired (S13's hardcoded layout remains as the null fallback); `MatchState` gains a per-map `wind_max` instance cap; mech movement bounds become map-driven via `apply_map_bounds`; the battle scene reads spawns from the map. Three initial maps: **Canyon** (the S13 layout authored as ops — a mask-equality test guarantees the playtest baseline is unchanged), **Floating Islands** (four islands over the void, strong wind 6.5, no ground — falls respawn), **Industrial Ruins** (ruined buildings with a walkable roof-tunnel, a broken-floor pit, a tiered tower, and a 10m **scaffold deck** structure 4m up with anchor targets). Map select lists all three; MatchSession.map_name becomes map_path. AI positioning degrades gracefully on void maps (NAN surfaces are already skipped; void probes read as edge risk).
+
 **Done:**
 
 - `scripts/terrain/map_definition.gd` / `map_op.gd` / `map_structure.gd` — maps as Resource data: ops (rect / circle / staircase fills), structures (region + world anchors → cell coords at build), spawn points (player + AI), per-map wind cap, and mech bounds.
