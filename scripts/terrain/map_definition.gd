@@ -20,6 +20,8 @@ const GRID_X_MIN := -30.0
 @export var display_name := "Canyon"
 @export var terrain_ops: Array = []
 @export var structures: Array = []
+## S22: MapHazard resources — damage zones and explosive objects.
+@export var hazards: Array = []
 ## [player_spawn: Vector3, ai_spawn: Vector3] — drop-in positions.
 @export var spawn_points: PackedVector3Array = PackedVector3Array([
 	Vector3(0, 3, 0), Vector3(12, 7, 0),

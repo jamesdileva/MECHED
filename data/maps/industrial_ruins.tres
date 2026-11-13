@@ -1,8 +1,9 @@
-[gd_resource type="Resource" load_steps=17 format=3]
+[gd_resource type="Resource" load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
+[ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -88,11 +89,37 @@ structure_name = "scaffold"
 region = Rect2(12, 3.75, 10, 0.5)
 anchors = PackedVector2Array(14, 4, 20, 4)
 
+[sub_resource type="Resource" id="hazard_pit_lava"]
+script = ExtResource("4_hazard")
+hazard_name = "pit_lava"
+kind = "zone"
+region = Rect2(0.25, -2, 2.5, 1.5)
+damage_per_second = 15.0
+
+[sub_resource type="Resource" id="hazard_barrel_rubble"]
+script = ExtResource("4_hazard")
+hazard_name = "barrel_rubble"
+kind = "explosive"
+position = Vector3(-7, 1.4, 0)
+explosion_radius = 3.0
+damage_max = 30.0
+knockback_force = 12.0
+
+[sub_resource type="Resource" id="hazard_barrel_tower"]
+script = ExtResource("4_hazard")
+hazard_name = "barrel_tower"
+kind = "explosive"
+position = Vector3(14, 2.5, 0)
+explosion_radius = 3.0
+damage_max = 30.0
+knockback_force = 12.0
+
 [resource]
 script = ExtResource("1_def")
 display_name = "Industrial Ruins"
 terrain_ops = [SubResource("op_ground"), SubResource("op_wall_west"), SubResource("op_wall_east"), SubResource("op_roof"), SubResource("op_rubble_a"), SubResource("op_rubble_b"), SubResource("op_broken_floor"), SubResource("op_tower"), SubResource("op_step_b"), SubResource("op_step_c"), SubResource("op_step_d"), SubResource("op_east_wall"), SubResource("op_deck")]
 structures = [SubResource("struct_scaffold")]
+hazards = [SubResource("hazard_pit_lava"), SubResource("hazard_barrel_rubble"), SubResource("hazard_barrel_tower")]
 spawn_points = PackedVector3Array(-24, 3, 0, 24, 3, 0)
 wind_max = 5.0
 bounds_min_x = -27.0

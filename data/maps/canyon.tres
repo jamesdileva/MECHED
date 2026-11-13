@@ -1,8 +1,9 @@
-[gd_resource type="Resource" load_steps=13 format=3]
+[gd_resource type="Resource" load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
+[ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -69,11 +70,19 @@ structure_name = "bridge"
 region = Rect2(17, -0.5, 8, 0.5)
 anchors = PackedVector2Array(21, -0.75, 21, -2.5, 21, -3.75)
 
+[sub_resource type="Resource" id="hazard_ravine_lava"]
+script = ExtResource("4_hazard")
+hazard_name = "ravine_lava"
+kind = "zone"
+region = Rect2(18.5, -3.5, 5, 2.5)
+damage_per_second = 15.0
+
 [resource]
 script = ExtResource("1_def")
 display_name = "Canyon"
 terrain_ops = [SubResource("op_ground"), SubResource("op_hill_staircase"), SubResource("op_hilltop"), SubResource("op_tunnel"), SubResource("op_wall"), SubResource("op_ravine"), SubResource("op_plateau"), SubResource("op_deck"), SubResource("op_pillar")]
 structures = [SubResource("struct_bridge")]
+hazards = [SubResource("hazard_ravine_lava")]
 spawn_points = PackedVector3Array(0, 3, 0, 12, 7, 0)
 wind_max = 5.0
 bounds_min_x = -27.0

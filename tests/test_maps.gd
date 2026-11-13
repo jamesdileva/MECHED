@@ -52,7 +52,7 @@ func test_floating_islands_have_no_ground() -> void:
 	assert_true(g.is_solid_world(Vector2(16, 1.5)), "island C is solid")
 	# ...and there is NO ground beneath — the void is real.
 	assert_true(not g.is_solid_world(Vector2(0, -1.0)), "no ground below the islands")
-	assert_true(g.is_nan(g.query_surface_y(0.0)), "mid-void columns have no surface")
+	assert_true(is_nan(g.query_surface_y(-9.0)), "mid-gap columns have no surface")
 	assert_true(g.query_surface_y(-16) >= 0.5, "island A has a surface to stand on")
 
 

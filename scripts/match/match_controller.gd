@@ -22,6 +22,8 @@ const Ballistics := preload("res://scripts/combat/ballistics.gd")
 const Knockback := preload("res://scripts/combat/knockback.gd")
 const PROJECTILE_SCENE := preload("res://scenes/projectiles/projectile.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
+const BARREL_SCENE := preload("res://scenes/hazards/explosive_barrel.tscn")
+const MapHazardScript := preload("res://scripts/terrain/map_hazard.gd")
 const WEAPON_ROCKET := preload("res://data/weapons/rocket.tres")
 const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
 const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
@@ -51,6 +53,9 @@ var terrain = null
 ## The battle's MapDefinition (S21): wind rules apply at setup; spawns and
 ## bounds are applied by the battle scene.
 var map_definition: Resource = null
+## S22 hazards: {region, dps} zones ticked every frame, and live barrel nodes.
+var _zones: Array = []
+var _barrels: Array = []
 
 
 ## Wires the entity list (index = turn order) and begins the match.
@@ -94,7 +99,48 @@ func setup(p_entities: Array) -> void:
 				if entity.definition != null and not entity.definition.weapons.is_empty() \
 				else DEFAULT_WEAPONS
 		turn_manager.state.set_loadout(entity_name, loadout)
+	_setup_hazards()
 	add_to_group("match_controller")
+
+
+## S22: materialize the map's hazards — zone data stays pure (ticked per
+## frame), explosives become barrel props in the world.
+func _setup_hazards() -> void:
+	_zones.clear()
+	_barrels.clear()
+	if map_definition == null:
+		return
+	var current_scene := get_tree().current_scene
+	for hazard in map_definition.hazards:
+		if hazard == null:
+			continue
+		if hazard.kind == "zone":
+			_zones.append({"region": hazard.region, "dps": hazard.damage_per_second})
+			_spawn_zone_visual(hazard.region, current_scene)
+		elif hazard.kind == "explosive":
+			var barrel = BARREL_SCENE.instantiate()
+			barrel.position = hazard.position
+			barrel.explosion_radius = hazard.explosion_radius
+			barrel.damage_max = hazard.damage_max
+			barrel.knockback_force = hazard.knockback_force
+			current_scene.add_child(barrel)
+			_barrels.append(barrel)
+
+
+## Translucent lava-colored slab over a zone region — readable from the
+## side-on camera; real lava art is a later pass.
+func _spawn_zone_visual(region: Rect2, parent: Node) -> void:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(region.size.x, region.size.y, 4.0)
+	mesh_instance.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(0.9, 0.25, 0.1, 0.55)
+	mesh_instance.material_override = mat
+	mesh_instance.position = Vector3(region.get_center().x, region.get_center().y, 0.0)
+	parent.add_child(mesh_instance)
 
 
 func _physics_process(delta: float) -> void:
@@ -105,6 +151,7 @@ func _physics_process(delta: float) -> void:
 		for mech in entities:
 			_zero_intent(mech)
 		return
+	_tick_zones(delta)
 	turn_manager.tick(delta)
 	var active: int = turn_manager.state.active_index
 	for i in entities.size():
@@ -127,6 +174,21 @@ func _zero_intent(mech) -> void:
 	mech.charge = 0.0
 	# The anchor is a per-turn stance: it drops when your turn ends.
 	mech.anchored = false
+
+
+## S22 zones: neutral damage-over-time on any mech body center inside them
+## (they burn the AI exactly as hard as they burn you). Kills route through
+## the normal declare_winner path.
+func _tick_zones(delta: float) -> void:
+	for zone in _zones:
+		for mech in entities:
+			var mech_name := String(mech.display_name())
+			if turn_manager.state.entity_health(mech_name) <= 0.0:
+				continue
+			var damage: float = MapHazardScript.zone_damage(
+					zone["region"], mech.position, zone["dps"], delta)
+			if damage > 0.0:
+				_apply_damage(mech, damage)
 
 
 ## The AI opponent's driver (S15/S16): the ai_driver state machine sets intent,
@@ -291,6 +353,7 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 	# One query serves damage AND knockback: the blast pushes farther than it
 	# hurts, and each module zeroes itself past its own radius.
 	var hits := get_viewport().world_3d.direct_space_state.intersect_shape(params, 16)
+	var barrels_to_detonate: Array = []
 	for hit in hits:
 		var collider = hit.get("collider")
 		if collider is Node and collider.is_in_group("mech"):
@@ -310,6 +373,14 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 				# Physics owns what the impulse becomes (guide §10): arcs,
 				# terrain, falling — the next move_and_slide integrates it.
 				collider.velocity += impulse
+		# S22: blasts reach explosive barrels — collected here, detonated
+		# after the loop (each detonates exactly once, chains included).
+		if collider is Node and collider.is_in_group("hazard_object") \
+				and not collider.detonated:
+			collider.detonated = true
+			barrels_to_detonate.append(collider)
+	for barrel in barrels_to_detonate:
+		_detonate_barrel(barrel)
 
 	if terrain != null:
 		# Crater size scales with the weapon's terrain damage (S11: grenades
@@ -322,6 +393,49 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 	# passes only after the LAST shell dies.
 	if is_final:
 		turn_manager.finish_resolution()
+
+
+## S22: a barrel's own blast — same FX/damage/knockback pipeline as shells
+## (its stats come from the map's hazard data), chaining into other barrels.
+## Each barrel detonates exactly once; recursion is bounded by barrel count.
+func _detonate_barrel(barrel) -> void:
+	var position: Vector3 = barrel.global_position
+	var radius: float = barrel.explosion_radius
+	var fx = EXPLOSION_SCENE.instantiate()
+	fx.blast_radius = radius
+	get_tree().current_scene.add_child(fx)
+	fx.global_position = position
+
+	var params := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = radius
+	params.shape = sphere
+	params.transform = Transform3D(Basis(), position)
+	params.collide_with_bodies = true
+	var hits := get_viewport().world_3d.direct_space_state.intersect_shape(params, 16)
+	var chained: Array = []
+	for hit in hits:
+		var collider = hit.get("collider")
+		if collider is Node and collider.is_in_group("mech"):
+			var dist: float = (collider.global_position - position).length()
+			var damage: float = Ballistics.damage_falloff(dist, radius,
+					barrel.damage_max, Ballistics.DIRECT_HIT_RADIUS)
+			if damage > 0.0:
+				_apply_damage(collider, damage)
+			var impulse: Vector3 = Knockback.impulse(
+					collider.global_position, position,
+					collider.is_on_floor(), collider.mass, collider.anchored,
+					barrel.knockback_force, radius)
+			if impulse != Vector3.ZERO:
+				collider.velocity += impulse
+		elif collider is Node and collider.is_in_group("hazard_object") \
+				and collider != barrel and not collider.detonated:
+			collider.detonated = true
+			chained.append(collider)
+	_barrels.erase(barrel)
+	barrel.queue_free()
+	for chained_barrel in chained:
+		_detonate_barrel(chained_barrel)
 
 
 ## MatchState.mech_health is the source of truth; the mech node gets a mirror.

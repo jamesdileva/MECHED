@@ -5,6 +5,27 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-13 — S22 · Environmental Hazards
+
+**Scope (planned):** per roadmap S22 — prototype hazards as data, keep only what creates decisions. Two types ship: (1) **damage zones** ("lava") — world-space XY rects from the map that damage any mech's body center inside them per tick (neutral: they burn the AI too), with a translucent in-world visual; (2) **explosive objects** (barrels) — RigidBody props spawned from map data, in the `hazard_object` group, that detonate when a shell explosion reaches them: blast FX + falloff damage + knockback to mechs, **chain-triggering** other barrels within radius (each detonates exactly once). Both are `MapHazard` resources in `data/maps/` — per-map hazard data like terrain ops. Evaluated-and-dropped per the roadmap's keep-only-what-creates-decisions rule: **electric zones** (mechanically identical to lava zones — a reskin, not a decision), **wind tunnels** (global wind S14 already carries the concept; local wind zones add complexity without a distinct decision), **collapsing structures** (shipped in S13 as anchor-collapse). Zone damage kills route through the existing declare_winner path ✓. The AI does not model barrels yet (S35 candidate evaluation territory) — barrels are currently a player-side tactical toy; noted.
+
+**Done:**
+
+- `scripts/terrain/map_hazard.gd` — the hazard data resource (zone region + dps; explosive position + blast stats) with the pure `zone_damage` containment function; hazards ride on MapDefinition as an array, per map.
+- `scenes/hazards/explosive_barrel.tscn` + thin script — a pushable RigidBody prop in the `hazard_object` group carrying its own blast stats; detonation payload (FX/damage/knockback) stays in the match layer.
+- MatchController: setup materializes hazards (zone data ticked per frame; barrels spawned into the world with a translucent lava visual over each zone); `_tick_zones` damages any mech body center inside a zone (neutral — the AI burns too; kills route through declare_winner); `_resolve_impact` and barrel blasts trigger barrels via the `hazard_object` group, and `_detonate_barrel` chains into other barrels (each detonates exactly once, recursion bounded).
+- Hazard data: Canyon's ravine bottom is now lava (shove-offs into the ravine are lethal-ish), Industrial Ruins' broken-floor pit burns and two barrels stand near the rubble and the tower steps.
+
+**Verification (roadmap S22 checklist — prototype, keep only what creates decisions):**
+
+- Tests **146/146 passed** — 7 new hazard tests: zone containment in/out, Canyon ravine lava placement, Islands ship none (the void is the hazard), Ruins lava + two barrels with unburied spawns, barrel scene group/body checks, and the zone-kill declare_winner path.
+- Manual (batched): shove someone off the plateau into Canyon's lava; shoot the barrel next to the AI; stand in a pit and watch your own HP tick (both sides burn).
+- The prototype evaluation is the sprint's deliverable: kept zones + explosives, dropped electric zones / wind tunnels / collapsing structures (S13 shipped the latter; the others duplicate existing mechanics) — recorded per the roadmap's keep-only-what-creates-decisions rule.
+
+**Next:** pause for the user's S08–S22 playtest (playtest.md updated with the hazards section). Roadmap continues with S23 — Mech Ability Pass — or a tuning pass; sequencing with the user.
+
+---
+
 ## 2026-11-12 — S21 · Map System
 
 **Scope (planned):** per roadmap S21 — data-driven maps; the same match system loads all three without code changes. `MapDefinition` Resource (display_name, terrain ops list, structures, spawn points, wind cap, mech bounds) + `MapOp` (rect / circle / staircase fill primitives) and `MapStructure` (region + world anchors, built to cell coords) — terrain, spawns, wind rules, boundaries, and structures are all data in `data/maps/*.tres`. `TerrainSystem.restore()` builds from the definition when one is wired (S13's hardcoded layout remains as the null fallback); `MatchState` gains a per-map `wind_max` instance cap; mech movement bounds become map-driven via `apply_map_bounds`; the battle scene reads spawns from the map. Three initial maps: **Canyon** (the S13 layout authored as ops — a mask-equality test guarantees the playtest baseline is unchanged), **Floating Islands** (four islands over the void, strong wind 6.5, no ground — falls respawn), **Industrial Ruins** (ruined buildings with a walkable roof-tunnel, a broken-floor pit, a tiered tower, and a 10m **scaffold deck** structure 4m up with anchor targets). Map select lists all three; MatchSession.map_name becomes map_path. AI positioning degrades gracefully on void maps (NAN surfaces are already skipped; void probes read as edge risk).

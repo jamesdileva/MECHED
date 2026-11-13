@@ -17,10 +17,11 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 ## Not built yet — don't report as bugs
 
 - Map select now lists three battlefields, but they share one tileset/visual style (S22 hazards and S45 visuals differentiate them further).
+- Hazards are prototyped (zones + barrels per the roadmap's evaluate-and-keep rule); no lava animations, no electric zones or wind tunnels (evaluated and dropped — they don't create distinct decisions).
 - No dedicated victory screen beyond the overlay ("VICTORY/DEFEAT" + rematch/menu).
 - No ability cooldown display yet — current abilities are stance/energy-gated (the ANCHORED badge shows state); cooldowns arrive with S23 abilities.
 - No sound, no tutorial.
-- The AI always pilots a Standard chassis (AI chassis choice is a later concern).
+- The AI always pilots a Standard chassis (AI chassis choice is a later concern). The AI does not yet model barrels as targets (S35 tactical search territory).
 
 ## Checklist
 
@@ -48,6 +49,12 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 ### 5. Knockback & explosions
 - [ ] Blasts push mechs (away from the blast; airborne = full force; grounded = half).
 - [ ] Blast near an edge = shove-off kills; anchored Bastion ignores it.
+
+### 5b. Environmental hazards (S22)
+- [ ] **Canyon**: the ravine bottom is now lava (glowing red slab) — shelling the bridge or shoving someone off the plateau edge drops them into it; watch their HP tick down while they're in it.
+- [ ] **Industrial Ruins**: the broken-floor pit burns too; **two barrels** stand near the rubble and the tower — shoot one and it detonates (blast damages and shoves anything nearby; barrels chain into each other if clustered).
+- [ ] Zones are neutral: standing in lava burns the AI exactly as hard as you.
+- [ ] Islands ship no hazards (the void does that job).
 
 ### 6. Wind (S14)
 - [ ] Fire into a headwind → falls short; tailwind → sails long; wind re-rolls every turn.
