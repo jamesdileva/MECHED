@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-13 — S23 · Mech Ability Pass
+
+**Scope (planned):** per roadmap S23 — expand each mech; every ability affects positioning or tactical options, no passive stat bonuses. `MechAbility` Resource (ability_name mechanic id, display_name, input, trigger toggle/hold/burst, energy cost/drain, cooldown, duration, param) — abilities are data arrays on MechDefinitions, mechanics interpreted by the mech. Per chassis (two ability buttons: E/LT + Shift/X, plus the Wraith's jump-hold jetpack): **Bastion** — Anchor (E, existing toggle, now with **Siege Mode fused**: anchored shots ×1.3) + **Armor Brace** (Shift burst: 2.5s taking ×0.5 damage, immobile, cd 8s); **Strider** — Dash (Shift burst, existing) now **evasive** (0.75s ×0.25 damage taken after dashing = Evasive Burst fused) + **Wall Climb** (E hold while airborne on a wall: gravity off, climbs at 3 m/s, drains 12 energy/s); **Wraith** — Jetpack (jump-hold, existing) + **Hover** (E hold airborne: gravity canceled, fuel burns at 60% rate) + **Air Dash** (Shift burst mid-air, 10 m/s, 25 energy, cd 6s). Cooldowns live on the mech node (per-mech combat timers, ticked per frame, displayed in the HUD); damage-taken mults (brace/evasive) route through `_apply_damage`. Deliberate fusions, recorded: Bastion's Siege Mode is fused into Anchor (2-button design, anchored bombardment), Strider's Evasive Burst into Dash — no redundant third stances. The AI (Standard chassis) is untouched by the pass; ability-driving AI is future work. Cooldowns live on the mech node as a documented exception to MatchState-purity (short-lived per-mech combat timers, not match state).
+
 **Done:**
 
 - `scripts/mechs/mech_ability.gd` — the ability data resource (mechanic id, display name, input, trigger toggle/hold/burst, energy cost/drain, cooldown, duration, param).
