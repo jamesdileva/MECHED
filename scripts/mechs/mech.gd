@@ -24,10 +24,22 @@ const AIM_MAX_DEG := 90.0
 ## Driver intent, set externally each physics tick by the match layer.
 var move_axis := 0.0
 var want_jump := false
-var want_dash := false
 var want_thrust := false
+var want_hover := false
 var aim_axis := 0.0
 var charge := 0.0
+
+## S23 ability state: cooldowns and hold-ability flags are per-mech combat
+## timers (documented exception to MatchState purity — they don't outlive the
+## mech node and are never part of match reconstruction).
+var cooldowns: Dictionary = {}
+var brace_timer := 0.0
+var brace_mult := 1.0
+var evasive_timer := 0.0
+var evasive_mult := 1.0
+var climbing := false
+var hovering := false
+var _climb_speed := 3.0
 
 ## Barrel elevation in degrees above the horizon (0–90); persists between
 ## turns like GunBound's angle memory.
@@ -60,18 +72,96 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	aim_angle = clampf(aim_angle - aim_axis * AIM_SPEED_DEG * delta, AIM_MIN_DEG, AIM_MAX_DEG)
 	_aim_pivot.rotation.z = deg_to_rad(aim_angle)
-	velocity = _movement.compute_velocity(velocity, move_axis, want_jump, want_thrust,
-			is_on_floor(), delta)
-	if want_dash:
-		want_dash = false
-		if is_on_floor() and can_dash():
-			velocity.x = _movement.dash_velocity(facing()).x
+	_tick_ability_timers(delta)
+	if climbing:
+		# Wall cling: gravity off, steady climb up the wall face.
+		velocity = Vector3(0.0, _climb_speed, 0.0)
+		if is_on_floor():
+			climbing = false
+	else:
+		velocity = _movement.compute_velocity(velocity, move_axis, want_jump, want_thrust,
+				want_hover, is_on_floor(), delta)
 	move_and_slide()
 	position = _movement.clamp_position(position)
 	_update_facing(move_axis, delta)
 	if should_respawn():
 		respawn()
 	want_jump = false
+
+
+## S23 ability timers: cooldowns tick down; brace/evasive windows expire.
+func _tick_ability_timers(delta: float) -> void:
+	for key in cooldowns.keys():
+		cooldowns[key] = cooldowns[key] - delta
+		if cooldowns[key] <= 0.0:
+			cooldowns.erase(key)
+	brace_timer = maxf(0.0, brace_timer - delta)
+	evasive_timer = maxf(0.0, evasive_timer - delta)
+
+
+func is_cooldown_ready(ability_name: String) -> bool:
+	return not cooldowns.has(ability_name)
+
+
+func start_cooldown(ability_name: String, seconds: float) -> void:
+	if seconds > 0.0:
+		cooldowns[ability_name] = seconds
+
+
+## Damage taken this tick scales with active defensive windows
+## (Armor Brace x0.5, evasive dash x0.25 — multiplicative when both live).
+func damage_taken_mult() -> float:
+	var mult := 1.0
+	if brace_timer > 0.0:
+		mult *= brace_mult
+	if evasive_timer > 0.0:
+		mult *= evasive_mult
+	return mult
+
+
+## Instant ability trigger (toggle/burst mechanics). The match layer gates
+## resources and cooldowns; the mech applies the mechanic.
+func apply_ability(ability: Resource) -> void:
+	match ability.ability_name:
+		"anchor":
+			anchored = not anchored
+		"armor_brace":
+			brace_timer = ability.duration
+			brace_mult = ability.param
+		"dash", "air_dash":
+			var movement: Node = _movement if _movement != null 					else get_node_or_null("Movement")
+			if movement != null and ability.ability_name == "dash":
+				velocity.x = movement.dash_velocity(facing()).x
+			else:
+				# Air dash carries its own speed (the chassis may have none).
+				velocity.x = facing() * ability.param
+			if ability.duration > 0.0:
+				evasive_timer = ability.duration
+				evasive_mult = ability.param
+
+
+## Hold-ability state while the input is held and resources last. The driver
+## calls this every tick; release_ability ends the hold.
+func hold_ability(ability: Resource) -> void:
+	match ability.ability_name:
+		"wall_climb":
+			climbing = true
+			_climb_speed = ability.param
+		"hover":
+			hovering = true
+
+
+func release_ability(ability: Resource) -> void:
+	match ability.ability_name:
+		"wall_climb":
+			climbing = false
+		"hover":
+			hovering = false
+
+
+func release_all_abilities() -> void:
+	climbing = false
+	hovering = false
 
 
 ## Pushes a MechDefinition's stats into the body and movement controller.
@@ -102,6 +192,11 @@ func can_thrust() -> bool:
 	return _definition != null and _definition.jetpack_fuel > 0.0
 
 
+## The chassis's ability resources (S23; empty for ability-less chassis).
+func abilities() -> Array:
+	return _definition.abilities if _definition != null else []
+
+
 func fuel_burn() -> float:
 	return _definition.jetpack_burn if _definition != null else 0.0
 
@@ -122,7 +217,10 @@ func _update_facing(axis: float, delta: float) -> void:
 ## +1 when facing right (+X), -1 when facing left. Used to sign the launch
 ## vector; aim_angle itself is always 0–90 above the horizon.
 func facing() -> float:
-	return -1.0 if _visual.rotation.y > PI * 0.5 else 1.0
+	var visual: Node3D = _visual if _visual != null else get_node_or_null("Visual")
+	if visual == null:
+		return 1.0
+	return -1.0 if visual.rotation.y > PI * 0.5 else 1.0
 
 
 ## Walk-speed reference for the match layer's energy accounting (the controller

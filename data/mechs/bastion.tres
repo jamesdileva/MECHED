@@ -1,7 +1,28 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
 [ext_resource type="Resource" path="res://data/mechs/bastion_modifier.tres" id="2_mod"]
+[ext_resource type="Script" path="res://scripts/mechs/mech_ability.gd" id="3_ab"]
+
+[sub_resource type="Resource" id="ab_anchor"]
+script = ExtResource("3_ab")
+ability_name = "anchor"
+display_name = "Anchor"
+input = "ability"
+trigger = "toggle"
+cooldown = 0.0
+duration = 0.0
+param = 1.0
+
+[sub_resource type="Resource" id="ab_brace"]
+script = ExtResource("3_ab")
+ability_name = "armor_brace"
+display_name = "Armor Brace"
+input = "dash"
+trigger = "burst"
+cooldown = 8.0
+duration = 2.5
+param = 0.5
 
 [resource]
 script = ExtResource("1_def")
@@ -17,3 +38,4 @@ jetpack_fuel = 0.0
 jetpack_thrust = 42.0
 jetpack_burn = 20.0
 weapon_modifier = ExtResource("2_mod")
+abilities = [SubResource("ab_anchor"), SubResource("ab_brace")]

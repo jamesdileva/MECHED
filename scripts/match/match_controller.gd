@@ -168,7 +168,7 @@ func _physics_process(delta: float) -> void:
 func _zero_intent(mech) -> void:
 	mech.move_axis = 0.0
 	mech.want_jump = false
-	mech.want_dash = false
+	mech.release_all_abilities()
 	mech.want_thrust = false
 	mech.aim_axis = 0.0
 	mech.charge = 0.0
@@ -228,16 +228,65 @@ func _consume_ai_fire() -> void:
 		_release_fire(entities[ai_index], ai_index, power)
 
 
+## S23: the generic ability loop — data-driven per chassis. Inputs, cooldowns,
+## and resource costs are gated here; the mech applies the mechanics through
+## apply_ability (toggle/burst) or hold/release (hold). Anchored mechs also
+## bombard: their shots gain the siege bonus (see _spawn_projectile).
+func _drive_abilities(mech, index: int, delta: float, in_move_phase: bool,
+		may_move: bool) -> void:
+	for ability in mech.abilities():
+		if ability == null:
+			continue
+		var input: String = ability.input
+		var ready: bool = mech.is_cooldown_ready(ability.ability_name)
+		match ability.trigger:
+			"toggle":
+				if in_move_phase and InputLayer.is_action_just_pressed(input) and ready:
+					mech.apply_ability(ability)
+					mech.start_cooldown(ability.ability_name, ability.cooldown)
+			"burst":
+				if in_move_phase and InputLayer.is_action_just_pressed(input) and ready \
+						and (ability.airborne or mech.is_on_floor()):
+					if ability.energy_cost > 0.0 \
+							and not turn_manager.spend_energy(index, ability.energy_cost):
+						continue
+					mech.apply_ability(ability)
+					mech.start_cooldown(ability.ability_name, ability.cooldown)
+			"hold":
+				var gates: bool = in_move_phase and InputLayer.is_action_pressed(input) \
+						and ready
+				if gates and ability.ability_name == "wall_climb":
+					gates = not mech.is_on_floor() \
+							and (mech.is_on_wall() or mech.climbing)
+				elif gates and ability.ability_name == "hover":
+					gates = not mech.is_on_floor()
+				if gates:
+					var paid := true
+					if ability.energy_per_second > 0.0:
+						paid = turn_manager.spend_energy(index,
+								ability.energy_per_second * delta)
+					if paid and ability.ability_name == "hover":
+						paid = turn_manager.spend_fuel(index,
+								mech.fuel_burn() * ability.param * delta)
+					if paid:
+						mech.hold_ability(ability)
+					else:
+						mech.release_ability(ability)
+				else:
+					mech.release_ability(ability)
+
+
 func _drive_player(mech, index: int, delta: float) -> void:
 	mech.aim_axis = InputLayer.get_aim_axis()
 	# Movement intents are move-phase only and stop when energy runs out.
 	# Fire/end-turn stay available on an empty energy bar.
 	var in_move_phase: bool = turn_manager.state.is_in_move_phase()
 	var may_move: bool = turn_manager.state.can_move()
-	if in_move_phase and InputLayer.is_action_just_pressed("use_ability"):
-		mech.anchored = not mech.anchored
-	# An anchored Bastion plants: no walk, no jump, no dash, no thrust —
-	# blast immunity is paid for with total immobility.
+	# S23 abilities: data-driven per chassis — the loop handles inputs,
+	# cooldowns, and energy/fuel costs; the mech applies the mechanics.
+	_drive_abilities(mech, index, delta, in_move_phase, may_move)
+	# An anchored Bastion plants: no walk, no jump — blast immunity is paid
+	# for with total immobility (and its shots gain the siege bombardment).
 	if mech.anchored:
 		may_move = false
 	mech.move_axis = InputLayer.get_move_axis() if may_move else 0.0
@@ -250,13 +299,6 @@ func _drive_player(mech, index: int, delta: float) -> void:
 			and InputLayer.is_action_just_pressed("jump")
 			and mech.is_on_floor()
 			and turn_manager.spend_jump(index))
-	# Dash burst (S08): grounded, edge-triggered, energy-gated; dash-less
-	# chassis refuse it in can_dash().
-	mech.want_dash = (may_move
-			and InputLayer.is_action_just_pressed("dash")
-			and mech.is_on_floor()
-			and mech.can_dash()
-			and turn_manager.spend_dash(index, mech.dash_cost()))
 	# Jetpack (S09): hold jump while airborne to thrust. Fuel drains per tick
 	# through the turn manager; a refused spend cuts thrust (empty tank).
 	mech.want_thrust = (may_move
@@ -290,6 +332,10 @@ func _spawn_projectile(mech, power: float) -> void:
 			if modifier != null else null
 	if transformation != null:
 		stats = transformation.apply(stats)
+	# Siege bombardment (S23): an anchored Bastion's shells hit harder —
+	# the payoff for planting.
+	if mech.anchored:
+		stats["damage_max"] = stats.get("damage_max", 0.0) * 1.3
 	var muzzle: Node3D = mech.get_node("Visual/AimPivot/Muzzle")
 	var count: int = stats.get("projectile_count", 1)
 	var spread: float = stats.get("spread_degrees", 0.0)
@@ -441,7 +487,8 @@ func _detonate_barrel(barrel) -> void:
 ## MatchState.mech_health is the source of truth; the mech node gets a mirror.
 func _apply_damage(mech: Node, amount: float) -> void:
 	var entity_name := String(mech.display_name())
-	var new_health: float = turn_manager.state.apply_damage(entity_name, amount)
+	var new_health: float = turn_manager.state.apply_damage(entity_name,
+			amount * mech.damage_taken_mult())
 	mech.sync_health(new_health)
 	# Minimal victory rule (S15): a chassis at zero health ends the match —
 	# the survivor takes the result. Full match flow arrives in S20.

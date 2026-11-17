@@ -1,7 +1,28 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
 [ext_resource type="Resource" path="res://data/mechs/strider_modifier.tres" id="2_mod"]
+[ext_resource type="Script" path="res://scripts/mechs/mech_ability.gd" id="3_ab"]
+
+[sub_resource type="Resource" id="ab_dash"]
+script = ExtResource("3_ab")
+ability_name = "dash"
+display_name = "Evasive Dash"
+input = "dash"
+trigger = "burst"
+energy_cost = 25.0
+cooldown = 0.0
+duration = 0.75
+param = 0.25
+
+[sub_resource type="Resource" id="ab_climb"]
+script = ExtResource("3_ab")
+ability_name = "wall_climb"
+display_name = "Wall Climb"
+input = "ability"
+trigger = "hold"
+energy_per_second = 12.0
+param = 3.0
 
 [resource]
 script = ExtResource("1_def")
@@ -17,3 +38,4 @@ jetpack_fuel = 0.0
 jetpack_thrust = 42.0
 jetpack_burn = 20.0
 weapon_modifier = ExtResource("2_mod")
+abilities = [SubResource("ab_dash"), SubResource("ab_climb")]

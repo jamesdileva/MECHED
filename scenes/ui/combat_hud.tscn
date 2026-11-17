@@ -129,3 +129,8 @@ unique_name_in_owner = true
 theme_override_colors/font_color = Color(0.95, 0.8, 0.3, 1)
 text = "ANCHORED"
 visible = false
+
+[node name="AbilityLabel" type="Label" parent="PlayerPanel/PV"]
+unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.6, 0.78, 0.9, 1)
+text = "READY"

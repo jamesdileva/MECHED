@@ -34,10 +34,15 @@ extends Node
 ## (jump), never zeroes it, so launches from blasts are not wiped on the next
 ## tick; a resting mech's velocity settles to zero through move_and_slide.
 func compute_velocity(current: Vector3, axis: float, jump: bool, thrust: bool,
-		on_floor: bool, delta: float) -> Vector3:
+		hover: bool, on_floor: bool, delta: float) -> Vector3:
 	var v := current
 	if not on_floor:
-		v.y -= gravity * delta
+		if hover:
+			# Hover cancels gravity by damping vertical velocity to zero —
+			# the jetpack thrust can still climb on top of it.
+			v.y = move_toward(v.y, 0.0, gravity * delta)
+		else:
+			v.y -= gravity * delta
 		if thrust:
 			v.y += thrust_accel * delta
 	elif jump:

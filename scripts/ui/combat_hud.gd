@@ -15,6 +15,7 @@ extends CanvasLayer
 @onready var _weapon_label: Label = %WeaponLabel
 @onready var _aim_label: Label = %AimLabel
 @onready var _anchor_label: Label = %AnchorLabel
+@onready var _ability_label: Label = %AbilityLabel
 @onready var _enemy_name: Label = %EnemyName
 @onready var _enemy_hp_bar: ProgressBar = %EnemyHPBar
 
@@ -50,6 +51,7 @@ func _process(_delta: float) -> void:
 	_weapon_label.text = "[%s]" % _weapon_label_text(player, s)
 	_aim_label.text = "AIM %.0f°   POWER %.0f%%" % [player.aim_angle, player.charge * 100.0]
 	_anchor_label.visible = player.anchored
+	_ability_label.text = _ability_text(player)
 
 	if enemy != null:
 		var enemy_name := String(enemy.display_name())
@@ -70,6 +72,25 @@ func _turn_text(mc, s) -> String:
 
 
 ## Armed weapon with its transformation name (Rocket -> Siege/Split/Guided).
+## Ability states + cooldowns (S23): active holds, bracing, and remaining
+## cooldown seconds for the player's abilities.
+func _ability_text(mech: Node) -> String:
+	var parts: PackedStringArray = []
+	if mech.climbing:
+		parts.append("CLIMBING")
+	if mech.hovering:
+		parts.append("HOVERING")
+	if mech.brace_timer > 0.0:
+		parts.append("BRACED %.1fs" % mech.brace_timer)
+	if mech.evasive_timer > 0.0:
+		parts.append("EVADING %.1fs" % mech.evasive_timer)
+	for ability_name in mech.cooldowns:
+		parts.append("%s %.1fs" % [String(ability_name).to_upper(), mech.cooldowns[ability_name]])
+	if parts.is_empty():
+		return "READY"
+	return " | ".join(parts)
+
+
 func _weapon_label_text(player: Node, s) -> String:
 	var weapon = s.active_weapon(String(player.display_name()))
 	if weapon == null:

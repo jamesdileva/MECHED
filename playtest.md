@@ -19,9 +19,8 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 - Map select now lists three battlefields, but they share one tileset/visual style (S22 hazards and S45 visuals differentiate them further).
 - Hazards are prototyped (zones + barrels per the roadmap's evaluate-and-keep rule); no lava animations, no electric zones or wind tunnels (evaluated and dropped — they don't create distinct decisions).
 - No dedicated victory screen beyond the overlay ("VICTORY/DEFEAT" + rematch/menu).
-- No ability cooldown display yet — current abilities are stance/energy-gated (the ANCHORED badge shows state); cooldowns arrive with S23 abilities.
-- No sound, no tutorial.
-- The AI always pilots a Standard chassis (AI chassis choice is a later concern). The AI does not yet model barrels as targets (S35 tactical search territory).
+- The AI pilots a Standard chassis and doesn't drive the new S23 abilities (ability-driving AI is future work); the AI does still anchor (Normal+).
+- No sound, no tutorial. The AI does not yet model barrels as targets (S35 tactical search territory).
 
 ## Checklist
 
@@ -64,6 +63,12 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 - [ ] **S16**: it *repositions* — walks to the hill / cover instead of firing from the flats, avoids standing at the ravine edge.
 - [ ] **S17**: stand on the bridge — it **shells the pillar** instead of you; stand at the plateau edge — it blasts the ground behind you to shove you off.
 - [ ] **S18**: try Easy → Normal → Hard → Expert (config swap). Expect: Easy is sloppy and static; Normal positions and anchors; Hard starts targeting the bridge/edges; Expert rarely misses and repositions finely.
+
+### 7b. Mech abilities (S23) — swap chassis to feel each set
+- [ ] **Bastion**: E anchors (immune + immobile, shots +30% while planted — siege bombardment); **Shift = Armor Brace** (2.5s of half damage taken, cooldown 8s, HUD shows BRACED).
+- [ ] **Strider**: Shift dashes AND grants a brief **evasive window** (quarter damage taken — HUD shows EVADING); **hold E on a wall mid-air to climb** (drains energy, HUD shows CLIMBING).
+- [ ] **Wraith**: hold Space = jetpack; **hold E in the air = Hover** (fall arrests, fuel drains slower); **Shift in the air = Air Dash** (25 energy, 6s cooldown, HUD shows AIR DASH countdown).
+- [ ] All ability states + cooldowns show in your HUD panel (ABILITY line).
 
 ### 8. Match end
 - [ ] Reduce a mech to 0 HP → HUD shows "X wins the match" and the match freezes.

@@ -83,17 +83,6 @@ func spend_jump(actor_index: int) -> bool:
 	return true
 
 
-## Dash burst cost (S08) — the amount comes from the mech's definition, since
-## the turn manager stays definition-agnostic.
-func spend_dash(actor_index: int, cost: float) -> bool:
-	if actor_index != state.active_index or not state.can_move():
-		return false
-	if state.movement_energy_left < cost:
-		return false
-	state.movement_energy_left -= cost
-	return true
-
-
 ## Jetpack fuel burn (S09) — the tick's worth of fuel comes from the mech's
 ## definition. Refusing the spend is the driver's signal to cut thrust.
 func spend_fuel(actor_index: int, amount: float) -> bool:
@@ -104,6 +93,17 @@ func spend_fuel(actor_index: int, amount: float) -> bool:
 	if fuel < amount:
 		return false
 	state.jetpack_fuel[entity_name] = fuel - amount
+	return true
+
+
+## Flat movement-energy spend (S23 generic ability costs, dash included).
+## Returns false when the active entity cannot afford it.
+func spend_energy(actor_index: int, amount: float) -> bool:
+	if actor_index != state.active_index or not state.can_move():
+		return false
+	if state.movement_energy_left < amount:
+		return false
+	state.movement_energy_left -= amount
 	return true
 
 

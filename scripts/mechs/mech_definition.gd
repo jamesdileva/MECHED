@@ -28,3 +28,6 @@ extends Resource
 @export var weapons: Array = []
 ## Optional weapon modifier (S11 multipliers; S12 per-weapon transformations).
 @export var weapon_modifier: Resource = null
+## Ability set (S23): MechAbility resources — the mechanics are data-configured
+## per chassis and interpreted by the mech.
+@export var abilities: Array = []

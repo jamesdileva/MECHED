@@ -5,6 +5,24 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/mechs/mech_ability.gd` — the ability data resource (mechanic id, display name, input, trigger toggle/hold/burst, energy cost/drain, cooldown, duration, param).
+- Ability sets authored inline per chassis in `data/mechs/`: Bastion [anchor toggle, armor_brace burst (2.5s ×0.5 damage taken, cd 8)], Strider [dash burst with evasive window (0.75s ×0.25, fused Evasive Burst), wall_climb hold (12 energy/s)], Wraith [hover hold (fuel burn ×0.6, gravity canceled), air_dash burst (own speed 10, cd 6, 25 energy)].
+- mech.gd interprets the mechanics (`apply_ability`/`hold_ability`/`release_ability`): cooldown dict ticked per frame, braced/evasive damage-taken multipliers via `damage_taken_mult()` (routed through `_apply_damage`), wall cling (gravity off, steady climb, floor/jump exits), hover (gravity canceled, fuel drain), air dash with its own speed. `facing()`/dash resolve nodes via fallbacks so detached instances work in tests.
+- MatchController: generic `_drive_abilities` loop (input gates, cooldowns, energy/fuel spends) for the player; anchored bombardment (+30% shot damage while anchored = Siege Mode fused); `_zero_intent` releases all abilities at turn end.
+- HUD: ABILITY line in the player panel (CLIMBING / HOVERING / BRACED / EVADING / cooldown countdowns).
+
+**Verification (roadmap S23 checklist — every ability affects positioning or tactics):**
+
+- Tests **154/154 passed** — 8 new ability tests: definition ability sets, cooldown tick/ready, anchor toggle, brace halves damage and expires, evasive window after dash, hover arrests falls (vs gravity accelerating), air dash own-speed burst, wall climb hold/release. All prior suites green; import/smoke exit 0 for both scenes; CI green.
+- Fixed during verification: mech.gd ability state vars missing (parse cascade caught by the suite), facing()/dash node fallbacks for detached instances, hover test expectation corrected (hover *arrests* falls by damping, it doesn't freeze velocity), and a stray duplicate spend_energy removed from the rename.
+- Known deferral: ability-driving AI (the AI chassis is Standard and doesn't use the new set) — future AI work.
+
+**Next:** pause for the user's S08–S23 playtest (playtest.md updated with §7b ability checklist). Roadmap continues with S24 — Balance Sandbox (internal tunables without code changes) — or S25 feel pass; sequencing with the user.
+
+---
+
 ## 2026-11-13 — S22 · Environmental Hazards
 
 **Scope (planned):** per roadmap S22 — prototype hazards as data, keep only what creates decisions. Two types ship: (1) **damage zones** ("lava") — world-space XY rects from the map that damage any mech's body center inside them per tick (neutral: they burn the AI too), with a translucent in-world visual; (2) **explosive objects** (barrels) — RigidBody props spawned from map data, in the `hazard_object` group, that detonate when a shell explosion reaches them: blast FX + falloff damage + knockback to mechs, **chain-triggering** other barrels within radius (each detonates exactly once). Both are `MapHazard` resources in `data/maps/` — per-map hazard data like terrain ops. Evaluated-and-dropped per the roadmap's keep-only-what-creates-decisions rule: **electric zones** (mechanically identical to lava zones — a reskin, not a decision), **wind tunnels** (global wind S14 already carries the concept; local wind zones add complexity without a distinct decision), **collapsing structures** (shipped in S13 as anchor-collapse). Zone damage kills route through the existing declare_winner path ✓. The AI does not model barrels yet (S35 candidate evaluation territory) — barrels are currently a player-side tactical toy; noted.

@@ -69,7 +69,6 @@ func update(mech, enemies: Array, state, tm, terrain, delta: float) -> void:
 		reset()
 	mech.move_axis = 0.0
 	mech.want_jump = false
-	mech.want_dash = false
 	mech.want_thrust = false
 	mech.aim_axis = 0.0
 	if not state.is_in_move_phase():

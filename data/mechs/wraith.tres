@@ -1,7 +1,27 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/mechs/mech_definition.gd" id="1_def"]
 [ext_resource type="Resource" path="res://data/mechs/wraith_modifier.tres" id="2_mod"]
+[ext_resource type="Script" path="res://scripts/mechs/mech_ability.gd" id="3_ab"]
+
+[sub_resource type="Resource" id="ab_hover"]
+script = ExtResource("3_ab")
+ability_name = "hover"
+display_name = "Hover"
+input = "ability"
+trigger = "hold"
+energy_per_second = 0.0
+param = 0.6
+
+[sub_resource type="Resource" id="ab_airdash"]
+script = ExtResource("3_ab")
+ability_name = "air_dash"
+display_name = "Air Dash"
+input = "dash"
+trigger = "burst"
+energy_cost = 25.0
+cooldown = 6.0
+param = 10.0
 
 [resource]
 script = ExtResource("1_def")
@@ -11,9 +31,10 @@ mass = 0.9
 max_speed = 8.0
 acceleration = 40.0
 jump_velocity = 10.0
-dash_speed = 0.0
+dash_speed = 10.0
 dash_cost = 25.0
 jetpack_fuel = 40.0
 jetpack_thrust = 42.0
 jetpack_burn = 20.0
 weapon_modifier = ExtResource("2_mod")
+abilities = [SubResource("ab_hover"), SubResource("ab_airdash")]
