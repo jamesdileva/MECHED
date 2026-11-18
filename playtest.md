@@ -112,6 +112,13 @@ Press **F3** first to hide the debug HUD — then, per the roadmap verification,
 - [ ] In battle: your chosen chassis is what you're driving (HUD name + bars match).
 - [ ] **Victory/defeat**: end the AI (or die) → VICTORY/DEFEAT overlay with focus on REMATCH; REMATCH restarts with the same setup AND map; MAIN MENU returns to the menu.
 
+### 12. Camera system (S27)
+- [ ] **Active-mech tracking**: the camera follows whoever's turn it is (watch it swing to the AI during its turn).
+- [ ] **Projectile tracking**: fire a long shot — the camera chases the shell, holds briefly on the blast, then swings back.
+- [ ] **Impact hold**: knockback blasts at the ruins/scaffold hold the camera on the explosion for a beat.
+- [ ] **Map overview**: press **C** (or R3 stick click) to toggle the zoomed-out full-battlefield framing; press again to return.
+- [ ] Framing always answers: where am I, where is my enemy, what changed?
+
 ## Notes
 
 (write findings here)

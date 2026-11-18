@@ -23,7 +23,6 @@ func _ready() -> void:
 	_match.map_definition = map_definition
 	$Battlefield/TerrainSystem.map_definition = map_definition
 	_apply_map_spawns(map_definition)
-	_camera.follow_target = $Mech
 	_match.setup([$Mech, $DummyMech])
 	_match.terrain = $Battlefield/TerrainSystem
 	_rematch_button.pressed.connect(_on_rematch)
@@ -45,6 +44,10 @@ func _apply_map_spawns(map_definition: Resource) -> void:
 func _process(_delta: float) -> void:
 	if _match == null or _match.turn_manager == null:
 		return
+	# S27 camera: the match layer chooses the focus (live shell first, else
+	# the active mech); the camera handles framing, holds, and overview.
+	_camera.focus_node = _match.camera_focus_node()
+	_camera.impact = _match.last_impact
 	# Victory/defeat overlay (S20): shows once when the match ends, then
 	# grabs focus so REMATCH / MAIN MENU are controller-navigable.
 	if _match.turn_manager.state.match_result != &"" and not _victory.visible:
@@ -76,6 +79,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Regenerate the battlefield from the map (S26 destruction
 			# quality): craters and collapsed structures fully restored.
 			$Battlefield/TerrainSystem.restore()
+		elif event.is_action_pressed("camera_overview"):
+			# S27 map overview toggle — C / R3 stick click.
+			$Camera3D.toggle_overview()
 
 
 func _on_rematch() -> void:

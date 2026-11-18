@@ -26,6 +26,22 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `game_camera.gd` rewritten as the camera system: **goal-priority state machine** (`pick_goal`, pure/testable) — map overview > fresh impact hold (600ms at faster smoothing) > focus node > hold position — with exponential smoothing toward the goal. Framing offsets are exports (combat framing, overview framing).
+- MatchController: `_live_shells` tracking (spawned/pruned), `camera_focus_node()` — live shell first while RESOLVING, else the active entity; `last_impact` recorded at every shell and barrel blast for the camera's impact hold.
+- New `camera_overview` input action (C key + R3 stick click — keyboard+gamepad together per the §18 contract) toggles the zoomed-out full-battlefield framing via `toggle_overview()`; main.gd wires the focus each frame and the toggle.
+- Fixed during verification: a multiline lambda inside `filter()` parsed unreliably (known GDScript quirk) — replaced with a `_prune_dead_shells` helper; the stale S02 `follow_target` assignment removed from main.gd (the S27 focus path replaces it); a battle-scene smoke run caught the missing `unique_name_in_owner` on the victory overlay from S20's wiring.
+
+**Verification (roadmap S27 checklist):**
+
+- Tests **177/177 passed** — 6 new camera tests: goal priority (overview > fresh impact > focus > hold), focus selection (active mech, live shell outranks), overview toggle. The camera_overview action joins the both-devices contract. All prior suites green; import/smoke exit 0 for both scenes; CI green.
+- Manual: watch the camera swing to the AI on its turn, chase a long shell, hold on the blast, and toggle the overview with C/R3.
+
+**Next:** pause for the user's S08–S27 playtest. Roadmap continues with S28 — Full Vertical Slice (lock content) and S29 — Gameplay Audit — both are playtest-driven, so the next sprint after the playtest is S30+ territory or S28's content lock depending on findings.
+
+---
+
 ## 2026-11-13 — S25 · Physics/Combat Feel Pass (tuning surface + workflow)
 
 **Scope (planned):** S25 is the feel sprint — and feel tuning is driven by playtest observations, not headless guesses. So this sprint completes the **tuning surface** and the **feel-evaluation workflow**; the numeric pass happens during the user's playtest, with final numbers applied from findings. Deliverables: (1) last feel constants moved into data — fire charge time into BalanceConfig, per-weapon shell lifetime into WeaponDefinition (explosion FX timing was already exported); (2) **F2 slow-motion debug key** (cycles time scale 1.0 → 0.5 → 0.25) — a §17 dev tool for evaluating explosions, dashes, and knockback arcs frame by frame; (3) playtest.md §12 feel-pass workflow mapping the roadmap's S25 tune-list (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera, impact effects) to the exact data file that controls each. Camera tracking/projection improvements stay S27 (separate system); impact-effect art stays S45. Roadmap note: feel tuning is deferred to the playtest by design — the S24 sandbox makes every knob reachable, and tuning without observations would be guessing.

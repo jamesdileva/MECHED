@@ -45,6 +45,10 @@ var entities: Array[Node] = []
 var _ai = null
 ## Test-injection point for the S24 balance config (null = use the autoload).
 var _balance_test_cfg: Resource = null
+## Live shells (S27 camera tracking): first valid one is the camera focus.
+var _live_shells: Array = []
+## The latest blast (S27 impact hold): {pos: Vector3, at: epoch ms}.
+var last_impact: Dictionary = {}
 ## Shells in flight (S12 multi-shot): the turn resolves when the count
 ## reaches zero, no matter which shell dies first.
 var _pending_shells := 0
@@ -374,6 +378,7 @@ func _spawn_projectile(mech, power: float) -> void:
 				angle, mech.facing(), power, stats["speed_min"], stats["speed_max"]))
 		projectile.exploded.connect(_on_projectile_exploded, CONNECT_ONE_SHOT)
 		_pending_shells += 1
+		_live_shells.append(projectile)
 
 
 ## Locked at launch: the guidance target (nearest opposing mech).
@@ -392,8 +397,19 @@ func _nearest_enemy(shooter) -> Node:
 
 func _on_projectile_exploded(position: Vector3, stats: Dictionary) -> void:
 	_pending_shells -= 1
+	_prune_dead_shells()
 	var is_final := _pending_shells <= 0
 	_resolve_impact.call_deferred(position, stats, is_final)
+
+
+## Drops freed shells from the tracking list (multiline lambdas inside
+## filter() calls parse unreliably — plain loop instead).
+func _prune_dead_shells() -> void:
+	var i := _live_shells.size() - 1
+	while i >= 0:
+		if not is_instance_valid(_live_shells[i]):
+			_live_shells.remove_at(i)
+		i -= 1
 
 
 ## Runs deferred: the explosion signal arrives while the physics space is
@@ -403,6 +419,8 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 	fx.blast_radius = stats.get("explosion_radius", Ballistics.EXPLOSION_RADIUS)
 	get_tree().current_scene.add_child(fx)
 	fx.global_position = position
+	# S27 impact hold: presentation reads this to hold the camera on the blast.
+	last_impact = {"pos": position, "at": Time.get_ticks_msec()}
 
 	var params := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
@@ -457,6 +475,17 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 		turn_manager.finish_resolution()
 
 
+## S27 camera focus: the live shell while one flies, else the active mech.
+func camera_focus_node() -> Node3D:
+	_prune_dead_shells()
+	if _live_shells.size() > 0:
+		return _live_shells[0]
+	var active: int = turn_manager.state.active_index 			if turn_manager.state.started else -1
+	if active >= 0 and active < entities.size():
+		return entities[active]
+	return null
+
+
 ## S22: a barrel's own blast — same FX/damage/knockback pipeline as shells
 ## (its stats come from the map's hazard data), chaining into other barrels.
 ## Each barrel detonates exactly once; recursion is bounded by barrel count.
@@ -467,6 +496,7 @@ func _detonate_barrel(barrel) -> void:
 	fx.blast_radius = radius
 	get_tree().current_scene.add_child(fx)
 	fx.global_position = position
+	last_impact = {"pos": position, "at": Time.get_ticks_msec()}
 
 	var params := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
