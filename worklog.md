@@ -26,6 +26,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-14 — S27 · Camera System
+
+**Scope (planned):** per roadmap S27 — camera behavior around tactical readability: the player always understands where am I / where is my enemy / what changed. `game_camera.gd` becomes the camera system: a **goal-priority state machine** (`pick_goal`, pure/testable) — map overview > fresh impact hold (600ms, faster smoothing) > focus node > hold position — with exponential smoothing to the goal. **Active-mech tracking**: the match layer exposes `camera_focus_node()` (live shell first while RESOLVING, else the active entity — so the camera follows the AI's turn too). **Projectile + impact tracking**: shells in flight are the focus; on impact the camera holds at the blast for the hold window. **Map overview**: new `camera_overview` input action (C key + R3 stick click — keyboard+gamepad bound together per the §18 contract) toggles a zoomed-out full-battlefield framing. Zoom remains the overview toggle only (mouse-wheel zoom is mouse-only, deferred). Camera is pure presentation — it reads match state, never writes it.
+
 **Done:**
 
 - `game_camera.gd` rewritten as the camera system: **goal-priority state machine** (`pick_goal`, pure/testable) — map overview > fresh impact hold (600ms at faster smoothing) > focus node > hold position — with exponential smoothing toward the goal. Framing offsets are exports (combat framing, overview framing).
