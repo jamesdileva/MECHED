@@ -72,6 +72,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.physical_keycode == KEY_F3:
 			# Hide the debug HUD to read the fight from the combat UI alone.
 			$DebugHUD.visible = not $DebugHUD.visible
+		elif event.physical_keycode == KEY_F4:
+			# Regenerate the battlefield from the map (S26 destruction
+			# quality): craters and collapsed structures fully restored.
+			$Battlefield/TerrainSystem.restore()
 
 
 func _on_rematch() -> void:

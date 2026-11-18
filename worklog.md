@@ -5,6 +5,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `terrain_grid.cell_solid_count()` — solid-cell diagnostic for stress tests and restore verification.
+- **F4 map-restore debug key** in main.gd — regenerates the mask from the wired map (craters and collapsed structures fully restored) mid-match; restore logic itself was already first-class (`TerrainSystem.restore()`), now verified by test.
+- Stress suite (`tests/test_terrain_quality.gd`, 8 tests): ten overlapping radius-6 blasts with per-hit query checks; a map-wide radius-60 carve leaving a valid empty grid that refills cleanly; carves centered past the grid edge (clamped, in-bounds cells still carved); bridge collapse under stress conditions; the identical stress sequence on all three maps; restore regenerating terrain + structure anchors; radius-0 carves changing nothing.
+
+**Verification (roadmap S26 checklist):**
+
+- Repeated explosions ✓, overlapping craters ✓, large explosions ✓ (radius 60 full-map carve stays consistent), edge cases ✓ (past-edge clamps, radius 0, dug-through columns), mech falling ✓ (S13/S15 physics + kill-plane respawn, unchanged), terrain regeneration ✓ (restore + F4, tested).
+- The critical requirement held with **no robustness fixes needed**: the carve pipeline, collapse rules, and chunk rebuilds survived the entire stress suite on the first run — the only fixes were test-geometry mistakes (a helper returning the arena dict, an edge-blast center 15m beyond reach). Grid consistency asserted after every stress step.
+- Tests **171/171 passed**; import/smoke exit 0 for both scenes; CI green.
+- Manual (optional, batched): F4 mid-match after heavy shelling — terrain, bridge, and structures regenerate; F1 respawns if a mech got stranded by a restore.
+
+**Next:** the destruction loop is proven. Roadmap continues with S27 — Camera System (battlefield framing, active-mech tracking, projectile/impact tracking, overview) — sequencing with the user.
+
+---
+
 ## 2026-11-13 — S25 · Physics/Combat Feel Pass (tuning surface + workflow)
 
 **Scope (planned):** S25 is the feel sprint — and feel tuning is driven by playtest observations, not headless guesses. So this sprint completes the **tuning surface** and the **feel-evaluation workflow**; the numeric pass happens during the user's playtest, with final numbers applied from findings. Deliverables: (1) last feel constants moved into data — fire charge time into BalanceConfig, per-weapon shell lifetime into WeaponDefinition (explosion FX timing was already exported); (2) **F2 slow-motion debug key** (cycles time scale 1.0 → 0.5 → 0.25) — a §17 dev tool for evaluating explosions, dashes, and knockback arcs frame by frame; (3) playtest.md §12 feel-pass workflow mapping the roadmap's S25 tune-list (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera, impact effects) to the exact data file that controls each. Camera tracking/projection improvements stay S27 (separate system); impact-effect art stays S45. Roadmap note: feel tuning is deferred to the playtest by design — the S24 sandbox makes every knob reachable, and tuning without observations would be guessing.

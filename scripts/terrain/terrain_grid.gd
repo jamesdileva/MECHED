@@ -66,6 +66,16 @@ func is_solid(c: Vector2i) -> bool:
 	return in_bounds(c) and cells[c.y * width + c.x] == 1
 
 
+## Number of solid cells (S26 stress diagnostics: carve totals and restore
+## verification).
+func cell_solid_count() -> int:
+	var count := 0
+	for value in cells:
+		if value == 1:
+			count += 1
+	return count
+
+
 func is_solid_world(p: Vector2) -> bool:
 	return is_solid(world_to_cell(p))
 
