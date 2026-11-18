@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-14 — S26 · Destruction Quality
+
+**Scope (planned):** per roadmap S26 — the critical requirement: **a match must never become physically broken by terrain destruction**. This is a robustness sprint, verifiable headless (no playtest needed). Deliverables: (1) a stress suite hammering the carve pipeline — repeated large explosions, overlapping craters, a full-map carve (radius 30 at center), carves past the grid edge, radius-0/1-cell carves, and collapse chains under stress — asserting the grid stays consistent (queries work, counts sane, no NaN crashes) after every hit; (2) **map restore** becomes a first-class operation with an F4 debug key (F1 respawn, F2 slow-mo, F3 debug HUD, F4 restore) — restore regenerates the mask from the map's ops AND revives collapsed structures with full anchors, verified by test; (3) any robustness gap the stress suite finds gets fixed. The player-facing checks land in playtest.md §4. A known quirk documented, not a bug: fill_world_rect includes the end cell (inclusive-end semantics), consistent across every layout.
+
 **Done:**
 
 - `terrain_grid.cell_solid_count()` — solid-cell diagnostic for stress tests and restore verification.
