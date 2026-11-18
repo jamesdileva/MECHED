@@ -68,6 +68,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-18 — S32 · Objective System Refinement
+
+**Scope (planned):** per roadmap S32 — the objective system's five kinds formalized: **Capture** (= Control zone hold), **Destroy** (= Structure demolition), **Reach** (= ordered checkpoints), **Survive** (NEW: a mode where you win by surviving N turns — highest remaining health wins at the limit, no map region needed), and **Escort** (enum value reserved; deferred — needs NPC entities from S43 content). MatchState.tick_mode gains the SURVIVE case (at `survive_turns` turn boundary, the entity with more remaining health wins); a `survive.tres` mode joins the flow; maps add Survive to supported_modes. Also: MatchController._apply_damage now scales damage through `mech.damage_taken_mult()` (S23 defensive windows), which the S24 sandbox and future abilities route through. The existing modes are proven identical by regression (no behavior change — this sprint formalizes vocabulary and adds one genuinely new win condition).
+
 **Done:**
 
 - `game_mode.gd`: WinCondition enum gains SURVIVE; `survive_turns` field (turns the mech must survive; highest remaining health wins at the limit, ties continue).
