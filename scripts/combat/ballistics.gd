@@ -31,13 +31,15 @@ static func launch_velocity(angle_deg: float, facing: float, power: float,
 
 ## Analytic flight time to a horizontal plane y = ground_y: solves
 ## 0.5 g t² − vy t − (y0 − ground_y) = 0 for the positive root.
-static func time_of_flight(origin: Vector3, velocity: Vector3, ground_y := 0.0) -> float:
-	var disc := velocity.y * velocity.y + 2.0 * MATCH_GRAVITY * (origin.y - ground_y)
-	return (velocity.y + sqrt(maxf(disc, 0.0))) / MATCH_GRAVITY
+static func time_of_flight(origin: Vector3, velocity: Vector3, ground_y := 0.0,
+		gravity := MATCH_GRAVITY) -> float:
+	var disc := velocity.y * velocity.y + 2.0 * gravity * (origin.y - ground_y)
+	return (velocity.y + sqrt(maxf(disc, 0.0))) / gravity
 
 
-static func range_on_ground(origin: Vector3, velocity: Vector3, ground_y := 0.0) -> float:
-	return absf(velocity.x) * time_of_flight(origin, velocity, ground_y)
+static func range_on_ground(origin: Vector3, velocity: Vector3, ground_y := 0.0,
+		gravity := MATCH_GRAVITY) -> float:
+	return absf(velocity.x) * time_of_flight(origin, velocity, ground_y, gravity)
 
 
 ## One tick of wind drift (S14): a constant acceleration on the shell.
@@ -50,12 +52,12 @@ static func wind_step(velocity: Vector3, wind: Vector3, delta: float) -> Vector3
 ## landing on y = ground_y. This is what the S15+ AI shot planner and any aim
 ## preview consume; tests use it for the tail/head/crosswind scenarios.
 static func simulate_flight(origin: Vector3, velocity: Vector3, wind: Vector2,
-		dt: float, ground_y := 0.0, max_time := 30.0) -> Dictionary:
+		dt: float, ground_y := 0.0, max_time := 30.0, gravity := MATCH_GRAVITY) -> Dictionary:
 	var pos := origin
 	var vel := velocity
 	var t := 0.0
 	while t < max_time:
-		vel.y -= MATCH_GRAVITY * dt
+		vel.y -= gravity * dt
 		vel.x += wind.x * dt
 		vel.y += wind.y * dt
 		pos += vel * dt

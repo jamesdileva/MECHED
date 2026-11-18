@@ -33,7 +33,7 @@ func _process(_delta: float) -> void:
 			if mc.entities.size() > 1 else null
 
 	_turn_label.text = _turn_text(mc, s)
-	_timer_bar.max_value = mc.turn_manager.TURN_TIME
+	_timer_bar.max_value = mc.turn_manager.turn_time
 	_timer_bar.value = maxf(s.turn_time_left, 0.0)
 	_wind_label.text = "WIND %s %.1f" % [mc.wind_arrow(s.wind), s.wind.length()]
 
@@ -42,7 +42,7 @@ func _process(_delta: float) -> void:
 			int(s.entity_health(player_name)), int(s.entity_max_health(player_name))]
 	_hp_bar.max_value = s.entity_max_health(player_name)
 	_hp_bar.value = s.entity_health(player_name)
-	_energy_bar.max_value = mc.turn_manager.ENERGY_PER_TURN
+	_energy_bar.max_value = mc.turn_manager.energy_per_turn
 	_energy_bar.value = s.movement_energy_left
 	var fuel_max: float = s.fuel_max.get(player_name, 0.0)
 	_fuel_bar.visible = fuel_max > 0.0

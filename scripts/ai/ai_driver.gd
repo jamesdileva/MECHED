@@ -120,7 +120,7 @@ func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
 			plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0),
 					target.global_position, signf(to_target), state.wind,
 					_loadout_stats(mech, state), enemy_surface_y, value_terrain,
-					structures, prof["angles"], prof["powers"])
+					structures, prof["angles"], prof["powers"], state.gravity)
 			if plan.has("slot"):
 				state.set_active_weapon(String(mech.display_name()), plan["slot"])
 			# Imperfect targeting (S18): noise draws from the per-match seeded
@@ -217,7 +217,7 @@ static func _is_drop(terrain, x: float, surface_y: float) -> bool:
 static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 		wind: Vector2, weapon_stats: Array, enemy_surface_y := NAN,
 		terrain = null, structures: Array = [], angles: Array = SOLVE_ANGLES,
-		powers: Array = SOLVE_POWERS) -> Dictionary:
+		powers: Array = SOLVE_POWERS, gravity := Ballistics.MATCH_GRAVITY) -> Dictionary:
 	var best := {"value": -INF, "miss": INF, "slot": -1, "angle": 45.0, "power": 1.0}
 	for entry in weapon_stats:
 		var stats: Dictionary = entry["stats"]
@@ -226,7 +226,7 @@ static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 				var vel: Vector3 = Ballistics.launch_velocity(
 						angle, dir_sign, power, stats["speed_min"], stats["speed_max"])
 				var result: Dictionary = Ballistics.simulate_flight(
-						origin, vel, wind, 1.0 / 60.0)
+						origin, vel, wind, 1.0 / 60.0, 0.0, 30.0, gravity)
 				var impact: Vector3 = result["position"]
 				var miss: float = impact.distance_to(target_pos)
 				var value: float = shot_value(impact, stats, target_pos,

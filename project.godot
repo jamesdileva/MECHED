@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 InputLayer="*res://scripts/input/input_layer.gd"
 MatchSession="*res://scripts/core/match_session.gd"
+Balance="*res://scripts/core/balance.gd"
 
 [display]
 

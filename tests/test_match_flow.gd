@@ -54,7 +54,7 @@ func test_duplicate_chassis_names_are_uniqued() -> void:
 	# Independent health: damaging one leaves the other untouched.
 	var s = controller.turn_manager.state
 	s.apply_damage(name1, 40.0)
-	assert_true(s.entity_health(name2) == s.STARTING_HEALTH,
+	assert_true(s.entity_health(name2) == s.starting_health,
 			"health keys are independent after uniquing")
 
 

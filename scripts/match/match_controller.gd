@@ -44,6 +44,8 @@ const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
 var turn_manager
 var entities: Array[Node] = []
 var _ai = null
+## Test-injection point for the S24 balance config (null = use the autoload).
+var _balance_test_cfg: Resource = null
 ## Shells in flight (S12 multi-shot): the turn resolves when the count
 ## reaches zero, no matter which shell dies first.
 var _pending_shells := 0
@@ -80,19 +82,29 @@ func setup(p_entities: Array) -> void:
 		used[unique] = true
 		entity.display_name_override = unique
 		names.append(unique)
+	# Balance sandbox (S24): match-level tuning from data/balance/balance.tres.
+	# Test-injection point (null = use the shipped defaults file).
+	var cfg: Resource = _balance_test_cfg if _balance_test_cfg != null else Balance.config
+	turn_manager.turn_time = cfg.turn_time
+	turn_manager.energy_per_turn = cfg.energy_per_turn
+	turn_manager.walk_cost_per_m = cfg.walk_cost_per_m
+	turn_manager.jump_cost = cfg.jump_cost
+	turn_manager.state.wind_cap = cfg.wind_max
+	turn_manager.state.gravity = cfg.gravity
 	turn_manager.begin_match(names)
 	# Map wind rules (S21): the definition caps the per-turn wind roll.
 	if map_definition != null:
 		turn_manager.state.wind_max = map_definition.wind_max
 	for entity in entities:
 		var entity_name := String(entity.display_name())
-		var max_health: float = entity.definition.max_health \
-				if entity.definition != null else turn_manager.state.STARTING_HEALTH
+		var max_health: float = entity.definition.max_health * cfg.health_mult \
+				if entity.definition != null else turn_manager.state.starting_health
 		turn_manager.state.set_entity_health(entity_name, max_health)
 		turn_manager.state.set_entity_max_health(entity_name, max_health)
 		entity.sync_health(max_health)
 		if entity.definition != null and entity.definition.jetpack_fuel > 0.0:
 			turn_manager.state.set_fuel_limit(entity_name, entity.definition.jetpack_fuel)
+		entity.apply_balance(cfg)
 		# Universal weapons: definitions may narrow the loadout, otherwise
 		# every chassis equips the full set.
 		var loadout: Array = entity.definition.weapons \
@@ -333,9 +345,10 @@ func _spawn_projectile(mech, power: float) -> void:
 	if transformation != null:
 		stats = transformation.apply(stats)
 	# Siege bombardment (S23): an anchored Bastion's shells hit harder —
-	# the payoff for planting.
+	# the payoff for planting. Balance damage mult scales everything (S24).
 	if mech.anchored:
 		stats["damage_max"] = stats.get("damage_max", 0.0) * 1.3
+	stats["damage_max"] = stats.get("damage_max", 0.0) * Balance.config.damage_mult
 	var muzzle: Node3D = mech.get_node("Visual/AimPivot/Muzzle")
 	var count: int = stats.get("projectile_count", 1)
 	var spread: float = stats.get("spread_degrees", 0.0)
@@ -350,6 +363,7 @@ func _spawn_projectile(mech, power: float) -> void:
 		projectile.bounciness = stats["bounciness"]
 		projectile.wind_accel = Vector3(
 				turn_manager.state.wind.x, turn_manager.state.wind.y, 0.0)
+		projectile.match_gravity = Balance.config.gravity
 		projectile.impact_stats = stats
 		if homing > 0.0 and target != null:
 			projectile.set_homing(target, homing)
@@ -413,8 +427,10 @@ func _resolve_impact(position: Vector3, stats: Dictionary, is_final: bool) -> vo
 			var impulse: Vector3 = Knockback.impulse(
 					collider.global_position, position,
 					collider.is_on_floor(), collider.mass, collider.anchored,
-					stats.get("knockback_force", Knockback.KNOCKBACK_FORCE),
-					stats.get("knockback_radius", Knockback.KNOCKBACK_RADIUS))
+					stats.get("knockback_force", Knockback.KNOCKBACK_FORCE)
+							* Balance.config.knockback_mult,
+					stats.get("knockback_radius", Knockback.KNOCKBACK_RADIUS),
+					Balance.config.ground_absorption)
 			if impulse != Vector3.ZERO:
 				# Physics owns what the impulse becomes (guide §10): arcs,
 				# terrain, falling — the next move_and_slide integrates it.
@@ -465,13 +481,15 @@ func _detonate_barrel(barrel) -> void:
 		if collider is Node and collider.is_in_group("mech"):
 			var dist: float = (collider.global_position - position).length()
 			var damage: float = Ballistics.damage_falloff(dist, radius,
-					barrel.damage_max, Ballistics.DIRECT_HIT_RADIUS)
+					barrel.damage_max * Balance.config.damage_mult,
+					Ballistics.DIRECT_HIT_RADIUS)
 			if damage > 0.0:
 				_apply_damage(collider, damage)
 			var impulse: Vector3 = Knockback.impulse(
 					collider.global_position, position,
 					collider.is_on_floor(), collider.mass, collider.anchored,
-					barrel.knockback_force, radius)
+					barrel.knockback_force * Balance.config.knockback_mult,
+					radius, Balance.config.ground_absorption)
 			if impulse != Vector3.ZERO:
 				collider.velocity += impulse
 		elif collider is Node and collider.is_in_group("hazard_object") \

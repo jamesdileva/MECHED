@@ -32,8 +32,8 @@ func test_begin_match_activates_first_entity() -> void:
 	assert_equal(s.active_index, 0, "first entity is active")
 	assert_equal(s.turn_number, 1, "turn numbering starts at 1")
 	assert_true(s.is_in_move_phase(), "turn opens in the move phase")
-	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "movement energy is full")
-	assert_equal(s.turn_time_left, tm.TURN_TIME, "turn timer is full")
+	assert_equal(s.movement_energy_left, tm.energy_per_turn, "movement energy is full")
+	assert_equal(s.turn_time_left, tm.turn_time, "turn timer is full")
 
 
 func test_end_turn_action_advances_and_resets() -> void:
@@ -44,8 +44,8 @@ func test_end_turn_action_advances_and_resets() -> void:
 	assert_equal(s.active_index, 1, "play passes to the next entity")
 	assert_equal(s.turn_number, 2, "turn number increments")
 	assert_true(s.is_in_move_phase(), "next turn opens in the move phase")
-	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "energy refreshed")
-	assert_equal(s.turn_time_left, tm.TURN_TIME, "timer refreshed")
+	assert_equal(s.movement_energy_left, tm.energy_per_turn, "energy refreshed")
+	assert_equal(s.turn_time_left, tm.turn_time, "timer refreshed")
 
 
 func test_turn_wraps_around_all_entities() -> void:
@@ -66,7 +66,7 @@ func test_non_active_actor_cannot_end_turn() -> void:
 
 func test_turn_timer_expires_and_advances() -> void:
 	var tm = _begin()
-	tm.tick(tm.TURN_TIME + 0.1)
+	tm.tick(tm.turn_time + 0.1)
 	assert_equal(tm.state.active_index, 1, "timer expiry passes the turn")
 	assert_equal(tm.state.turn_number, 2, "timer expiry counts as a full turn")
 
@@ -80,16 +80,16 @@ func test_tick_before_match_begin_is_noop() -> void:
 func test_walking_spends_energy_per_meter() -> void:
 	var tm = _begin()
 	assert_true(tm.spend_movement(0, 0.0), "standing still is permitted and free")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "zero distance costs nothing")
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn, "zero distance costs nothing")
 	assert_true(tm.spend_movement(0, 5.0), "walking is permitted")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 5.0,
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn - 5.0,
 			"walk costs 1 energy per meter")
 
 
 func test_non_active_actor_cannot_move() -> void:
 	var tm = _begin()
 	assert_true(tm.spend_movement(1, 5.0) == false, "movement during another turn is refused")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "no energy spent")
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn, "no energy spent")
 
 
 func test_exhausted_energy_stops_movement_without_ending_turn() -> void:
@@ -105,10 +105,10 @@ func test_exhausted_energy_stops_movement_without_ending_turn() -> void:
 func test_jump_costs_flat_energy() -> void:
 	var tm = _begin()
 	assert_true(tm.spend_jump(0), "jump is affordable at full energy")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - tm.JUMP_COST,
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn - tm.jump_cost,
 			"jump costs its flat chunk")
 	assert_true(tm.spend_jump(0), "a second jump also works (and costs again)")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 2 * tm.JUMP_COST,
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn - 2 * tm.jump_cost,
 			"jumps stack their cost")
 
 
@@ -125,16 +125,16 @@ func test_jump_refused_when_unaffordable() -> void:
 func test_dash_spends_energy() -> void:
 	var tm = _begin()
 	assert_true(tm.spend_energy(0, 25.0), "dash is affordable at full energy")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN - 25.0,
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn - 25.0,
 			"dash costs its energy chunk")
 
 
 func test_dash_refused_when_unaffordable_or_inactive() -> void:
 	var tm = _begin()
 	assert_true(tm.spend_energy(1, 25.0) == false, "non-active entity cannot dash")
-	assert_true(tm.spend_energy(0, tm.ENERGY_PER_TURN + 1.0) == false,
+	assert_true(tm.spend_energy(0, tm.energy_per_turn + 1.0) == false,
 			"dash refused when the cost exceeds remaining energy")
-	assert_equal(tm.state.movement_energy_left, tm.ENERGY_PER_TURN, "failed dashes cost nothing")
+	assert_equal(tm.state.movement_energy_left, tm.energy_per_turn, "failed dashes cost nothing")
 
 
 func test_jetpack_fuel_spends_and_refills() -> void:
@@ -189,13 +189,13 @@ func test_finish_resolution_advances_turn() -> void:
 	assert_equal(s.active_index, 1, "resolved shot passes play on")
 	assert_equal(s.turn_number, 2, "next turn is numbered")
 	assert_true(s.is_in_move_phase(), "next turn opens in the move phase")
-	assert_equal(s.movement_energy_left, tm.ENERGY_PER_TURN, "energy refreshed")
+	assert_equal(s.movement_energy_left, tm.energy_per_turn, "energy refreshed")
 
 
 func test_damage_is_tracked_in_match_state() -> void:
 	var tm = _begin()
 	var s = tm.state
-	assert_equal(s.entity_health("Mech"), s.STARTING_HEALTH, "entities start at full health")
+	assert_equal(s.entity_health("Mech"), s.starting_health, "entities start at full health")
 	assert_equal(s.apply_damage("Mech", 40.0), 60.0, "damage reduces health")
 	assert_equal(s.entity_health("Mech"), 60.0, "health is readable from state")
 	assert_equal(s.apply_damage("Mech", 200.0), 0.0, "health clamps at zero")

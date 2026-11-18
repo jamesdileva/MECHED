@@ -13,6 +13,7 @@ enum Phase { INACTIVE, MOVE, RESOLVING }
 const STARTING_HEALTH := 100.0
 ## Wind strength cap (S14): m/s² of drift against 30 gravity — meaningful,
 ## never dominating. Maps override the instance value (S21 wind rules).
+## Default wind cap; Balance overrides the instance value at setup (S21/S24).
 const WIND_MAX := 5.0
 
 var started := false
@@ -23,6 +24,8 @@ var phase: int = Phase.INACTIVE
 var movement_energy_left := 0.0
 var turn_time_left := 0.0
 var mech_health: Dictionary = {}
+## Starting-health instance value (S24): Balance sets it at match setup.
+var starting_health := STARTING_HEALTH
 ## Per-entity maximum health (from MechDefinitions, S19 HUD bars scale to it).
 var health_max: Dictionary = {}
 ## Per-entity jetpack fuel (S09): current and per-turn maximum. Entities
@@ -37,6 +40,11 @@ var active_weapon_index: Dictionary = {}
 ## gameplay plane (±X tail/headwind, Y updraft/downdraft); magnitude is
 ## strength. Re-rolled every turn from the per-match seeded RNG.
 var wind := Vector2.ZERO
+## Wind cap instance value (S24): Balance sets it at match setup.
+var wind_cap := WIND_MAX
+## Gravity instance value (S24): Balance sets it at match setup; the AI shot
+## solver reads it to stay in sync with real flight.
+var gravity := 30.0
 var rng := RandomNumberGenerator.new()
 ## Per-map wind cap (S21 wind rules); the const WIND_MAX is the default.
 var wind_max := WIND_MAX
@@ -57,7 +65,7 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 	mech_health.clear()
 	health_max.clear()
 	for entity_name in names:
-		mech_health[entity_name] = STARTING_HEALTH
+		mech_health[entity_name] = starting_health
 	jetpack_fuel.clear()
 	fuel_max.clear()
 	weapon_loadouts.clear()
@@ -109,7 +117,7 @@ func set_entity_max_health(entity_name: String, value: float) -> void:
 
 
 func entity_max_health(entity_name: String) -> float:
-	return health_max.get(entity_name, STARTING_HEALTH)
+	return health_max.get(entity_name, starting_health)
 
 
 ## Registers a jetpack and fills its tank (setup-time, per definition).

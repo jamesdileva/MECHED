@@ -238,6 +238,19 @@ func apply_map_bounds(map_definition: Resource) -> void:
 	_movement.bounds_max_x = map_definition.bounds_max_x
 
 
+## Balance sandbox (S24): per-match global tuning applied to the movement
+## controller (gravity from Balance; speed scaled onto the chassis value).
+func apply_balance(cfg: Resource) -> void:
+	if cfg == null:
+		return
+	# get_node_or_null so detached instances work in headless tests.
+	var movement: Node = _movement if _movement != null else get_node_or_null("Movement")
+	if movement == null:
+		return
+	movement.gravity = cfg.gravity
+	movement.max_speed = cfg.move_speed_mult * movement.max_speed
+
+
 func sync_health(value: float) -> void:
 	health = value
 

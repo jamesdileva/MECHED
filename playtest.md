@@ -70,6 +70,13 @@ Date of build: after S18 (AI Difficulty). Everything below is in the game unless
 - [ ] **Wraith**: hold Space = jetpack; **hold E in the air = Hover** (fall arrests, fuel drains slower); **Shift in the air = Air Dash** (25 energy, 6s cooldown, HUD shows AIR DASH countdown).
 - [ ] All ability states + cooldowns show in your HUD panel (ABILITY line).
 
+### 7c. Balance sandbox (S24) — tune without code
+Edit `data/balance/balance.tres` (any text editor) and F5 — examples:
+- [ ] `turn_time = 9.0` → faster turns; `energy_per_turn = 200.0` → mobile match.
+- [ ] `damage_mult = 2.0` → every shell double damage; `knockback_mult = 2.5` → pinball blasts.
+- [ ] `gravity = 12.0` → moon-gravity arcs (the AI re-solves for it — watch its shots adapt).
+- [ ] `health_mult = 0.5` → fragile mechs. Wind cap: set per-map in the map resources.
+
 ### 8. Match end
 - [ ] Reduce a mech to 0 HP → HUD shows "X wins the match" and the match freezes.
 

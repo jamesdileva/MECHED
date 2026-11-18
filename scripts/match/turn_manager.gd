@@ -10,18 +10,20 @@ const MatchStateScript := preload("res://scripts/match/match_state.gd")
 const EndTurnAction := preload("res://scripts/match/action_end_turn.gd")
 const FireAction := preload("res://scripts/match/action_fire.gd")
 
-const TURN_TIME := 15.0
+## Match-level tuning (S24): instance values seeded from Balance at setup —
+## edit data/balance/balance.tres, not this file.
+var turn_time := 15.0
 ## Movement economy (S07, roadmap example): walking costs per meter, jumping
 ## a flat chunk. Dash joins with the first mobility mech (S08).
-const ENERGY_PER_TURN := 100.0
-const WALK_COST_PER_M := 1.0
-const JUMP_COST := 10.0
+var energy_per_turn := 100.0
+var walk_cost_per_m := 1.0
+var jump_cost := 10.0
 
 var state := MatchStateScript.new()
 
 
 func begin_match(entity_names: PackedStringArray) -> void:
-	state.begin_match(entity_names, ENERGY_PER_TURN, TURN_TIME)
+	state.begin_match(entity_names, energy_per_turn, turn_time)
 
 
 ## Per-tick turn progression. The turn timer is the fallback that guarantees
@@ -69,7 +71,7 @@ func spend_movement(actor_index: int, meters: float) -> bool:
 	if actor_index != state.active_index or not state.can_move():
 		return false
 	state.movement_energy_left = maxf(
-			0.0, state.movement_energy_left - meters * WALK_COST_PER_M)
+			0.0, state.movement_energy_left - meters * walk_cost_per_m)
 	return true
 
 
@@ -77,9 +79,9 @@ func spend_movement(actor_index: int, meters: float) -> bool:
 func spend_jump(actor_index: int) -> bool:
 	if actor_index != state.active_index or not state.can_move():
 		return false
-	if state.movement_energy_left < JUMP_COST:
+	if state.movement_energy_left < jump_cost:
 		return false
-	state.movement_energy_left -= JUMP_COST
+	state.movement_energy_left -= jump_cost
 	return true
 
 
@@ -113,8 +115,8 @@ func end_turn(actor_index: int) -> void:
 	state.active_index = (state.active_index + 1) % state.entity_names.size()
 	state.turn_number += 1
 	state.phase = MatchStateScript.Phase.MOVE
-	state.movement_energy_left = ENERGY_PER_TURN
-	state.turn_time_left = TURN_TIME
+	state.movement_energy_left = energy_per_turn
+	state.turn_time_left = turn_time
 	state.refill_fuel(state.active_entity_name())
 	# Wind re-rolls every turn (S14) — the "changing wind" artillery scenario.
 	state.roll_wind()

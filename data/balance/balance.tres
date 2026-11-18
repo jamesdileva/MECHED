@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/balance_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+turn_time = 15.0
+energy_per_turn = 100.0
+walk_cost_per_m = 1.0
+jump_cost = 10.0
+health_mult = 1.0
+move_speed_mult = 1.0
+damage_mult = 1.0
+knockback_mult = 1.0
+wind_max = 5.0
+gravity = 30.0
+ground_absorption = 0.5

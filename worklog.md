@@ -5,6 +5,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/core/balance_config.gd` + `scripts/core/balance.gd` (autoload) + `data/balance/balance.tres` — the match-level tuning table as data: turn_time, energy economy (per-turn energy, walk cost, jump cost), wind cap, gravity, ground absorption, and family multipliers (health_mult, move_speed_mult, damage_mult, knockback_mult).
+- Consts became instance values seeded from Balance at match setup: TurnManager (turn_time, energy_per_turn, walk_cost_per_m, jump_cost), MatchState (starting_health removed — redundant with chassis defs × health_mult, wind_cap, gravity); ballistics flight math gained optional gravity params; Knockback.impulse gained an absorption param; projectile/mech movement gravity read Balance; damage/knockback mults scale shells and barrel blasts at resolve time.
+- The AI shot solver reads state.gravity — its predictions stay in sync with real flight on any tuned gravity.
+- Fixed during verification: HUD referenced the removed TURN_TIME/ENERGY_PER_TURN consts (battle-scene smoke caught it); a broken duplicate spend_energy from a partial rename removed; the redundant starting-health knob dropped with a test proving health_mult scales starting health instead.
+
+**Verification (roadmap S24 checklist — health/movement/weapon power/explosion radius/knockback/cooldown/energy/fuel/wind without code changes):**
+
+- Per-item: chassis stats + abilities + weapons + cooldowns were already Resources (S08/S11/S23) ✓. Match-level: BalanceConfig covers turn time, energy economy, wind cap, gravity, ground absorption, damage/knockback/health/speed multipliers ✓. Explosion radius: per-weapon data ✓.
+- Tests **161/161 passed** — 7 new balance tests: defaults match shipped tuning; setup applies turn time/energy/jump cost; gravity reaches state + mech movement; move_speed_mult and health_mult scale chassis values; damage/knockback mults settable. All prior suites green; import/smoke exit 0 for both scenes; CI green.
+- Manual: edit balance.tres (playtest.md §7c examples) and F5 — no code touched.
+
+**Next:** pause for the user's S08–S24 playtest. Roadmap continues with S25 — Physics/Combat Feel pass (tuning IN GAME using the sandbox), then S26 destruction quality.
+
+---
+
 ## 2026-11-13 — S23 · Mech Ability Pass
 
 **Scope (planned):** per roadmap S23 — expand each mech; every ability affects positioning or tactical options, no passive stat bonuses. `MechAbility` Resource (ability_name mechanic id, display_name, input, trigger toggle/hold/burst, energy cost/drain, cooldown, duration, param) — abilities are data arrays on MechDefinitions, mechanics interpreted by the mech. Per chassis (two ability buttons: E/LT + Shift/X, plus the Wraith's jump-hold jetpack): **Bastion** — Anchor (E, existing toggle, now with **Siege Mode fused**: anchored shots ×1.3) + **Armor Brace** (Shift burst: 2.5s taking ×0.5 damage, immobile, cd 8s); **Strider** — Dash (Shift burst, existing) now **evasive** (0.75s ×0.25 damage taken after dashing = Evasive Burst fused) + **Wall Climb** (E hold while airborne on a wall: gravity off, climbs at 3 m/s, drains 12 energy/s); **Wraith** — Jetpack (jump-hold, existing) + **Hover** (E hold airborne: gravity canceled, fuel burns at 60% rate) + **Air Dash** (Shift burst mid-air, 10 m/s, 25 energy, cd 6s). Cooldowns live on the mech node (per-mech combat timers, ticked per frame, displayed in the HUD); damage-taken mults (brace/evasive) route through `_apply_damage`. Deliberate fusions, recorded: Bastion's Siege Mode is fused into Anchor (2-button design, anchored bombardment), Strider's Evasive Burst into Dash — no redundant third stances. The AI (Standard chassis) is untouched by the pass; ability-driving AI is future work. Cooldowns live on the mech node as a documented exception to MatchState-purity (short-lived per-mech combat timers, not match state).

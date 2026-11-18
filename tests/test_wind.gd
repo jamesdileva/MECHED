@@ -62,8 +62,8 @@ func test_wind_rolls_stay_capped() -> void:
 	s.begin_match(PackedStringArray(["A", "B"]), 100.0, 15.0, 12345)
 	for i in 50:
 		s.roll_wind()
-		assert_true(s.wind.length() <= s.WIND_MAX + EPS,
-				"rolled wind never exceeds WIND_MAX")
+		assert_true(s.wind.length() <= s.wind_cap + EPS,
+				"rolled wind never exceeds the cap")
 
 
 func test_wind_changes_on_turn_transition() -> void:
