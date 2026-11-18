@@ -46,6 +46,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-18 — S31 · Game Modes
+
+**Scope (planned):** per roadmap S31 — Elimination (formalized as the primary mode), **Control** (hold objectives), **Siege** (attack/defend), and **Mobility Race** (race through a destructible battlefield — reinforces the mobility identity). Design: `GameMode` Resource (mode_name, win_condition enum, hold_time_to_win, siege_turns) as data in `data/modes/`; the MAP declares what it supports — `MapObjective` resources (control_zone / checkpoint with order / siege_target bound to a structure name) and `supported_modes` on MapDefinition; mode select filters by the chosen map. Win evaluation lives in MatchState (`setup_mode`/`tick_mode`, pure over entity positions — headless-testable): **Control** accumulates hold seconds inside any control zone (first to hold_time_to_win); **Mobility Race** progresses through ordered checkpoints (first to the final one); **Siege** 1v1 = the first entity (player) attacks the target structure, the second defends — attacker wins by collapsing it (live grid check), defender wins when the turn limit expires; **Elimination** stays the existing 0-health path. A mode whose objectives the map lacks degrades to Elimination (documented). HUD mode name in the match line; mode select slots into the flow between map select and battle.
+
 **Done:**
 
 - `scripts/match/game_mode.gd` — the mode rule resource (mode_name, win_condition enum ELIMINATION/CONTROL/SIEGE/MOBILITY_RACE, hold_time_to_win, siege_turns) as data in `data/modes/*.tres`.
