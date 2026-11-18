@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-13 — S24 · Balance Sandbox
+
+**Scope (planned):** per roadmap S24 — an internal tuning mode: developers change health, movement, weapon power, explosion radius, knockback, ability cooldown, energy, fuel, and wind **without changing gameplay code**. Design: a `BalanceConfig` Resource (`data/balance/balance.tres`, shipped with current defaults — editing the file IS the sandbox) loaded by a `Balance` autoload, plus global multipliers that scale whole families (health_mult, move_speed_mult, damage_mult, knockback_mult). Core consts become instance values: TurnManager (turn_time, energy_per_turn, walk_cost_per_m, jump_cost) and MatchState (starting_health, wind_cap, gravity) — set from Balance at match setup; ballistics statics gain optional gravity params so the AI's shot solver stays in sync with real flight on any gravity; knockback impulse gains an absorption param. Per-chassis/per-weapon tuning was already data (S08/S11 definitions) — this sprint covers the cross-cutting match-level knobs. Data resources remain the per-item balance surface; BalanceConfig is the match-level one.
+
 **Done:**
 
 - `scripts/core/balance_config.gd` + `scripts/core/balance.gd` (autoload) + `data/balance/balance.tres` — the match-level tuning table as data: turn_time, energy economy (per-turn energy, walk cost, jump cost), wind cap, gravity, ground absorption, and family multipliers (health_mult, move_speed_mult, damage_mult, knockback_mult).
