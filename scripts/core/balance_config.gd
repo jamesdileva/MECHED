@@ -11,6 +11,10 @@ extends Resource
 @export var energy_per_turn := 100.0
 @export var walk_cost_per_m := 1.0
 @export var jump_cost := 10.0
+## Fire charge duration in seconds (S25 feel: hold-to-fire ramp).
+@export var charge_time := 1.2
+## Default shell lifetime in seconds (per-weapon lifetime overrides this).
+@export var shell_lifetime := 8.0
 
 @export var health_mult := 1.0
 @export var move_speed_mult := 1.0

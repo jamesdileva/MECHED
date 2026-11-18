@@ -76,6 +76,15 @@ Edit `data/balance/balance.tres` (any text editor) and F5 — examples:
 - [ ] `damage_mult = 2.0` → every shell double damage; `knockback_mult = 2.5` → pinball blasts.
 - [ ] `gravity = 12.0` → moon-gravity arcs (the AI re-solves for it — watch its shots adapt).
 - [ ] `health_mult = 0.5` → fragile mechs. Wind cap: set per-map in the map resources.
+- [ ] `charge_time` → hold-to-fire ramp speed; `shell_lifetime` → how long a missed shell stays in flight.
+
+### 7d. Feel pass (S25) — evaluate with the slow-mo tool
+Press **F2** in a match to cycle time scale 1.0 → 0.5 → 0.25 (HUD-free dev tool; resets to 1.0):
+- [ ] Explosions: does the blast timing read clearly at normal speed?
+- [ ] Dashes/knockback arcs: slow-mo them and judge the motion.
+- [ ] Charge ramp (`charge_time`), shell flight (`shell_lifetime`, per-weapon `lifetime`): tune in balance.tres, re-run.
+- [ ] Jetpack responsiveness: `jetpack_thrust`/`jetpack_burn` per chassis in `data/mechs/*.tres`.
+- [ ] Report which values you'd change — final numbers land in balance/weapon data from your findings.
 
 ### 8. Match end
 - [ ] Reduce a mech to 0 HP → HUD shows "X wins the match" and the match freezes.

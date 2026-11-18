@@ -62,6 +62,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_F1:
 			for mech in get_tree().get_nodes_in_group("mech"):
 				mech.respawn()
+		elif event.physical_keycode == KEY_F2:
+			# Feel-evaluation tool (S25): cycle time scale for slow-motion
+			# inspection of explosions, dashes, and knockback arcs.
+			var next_scale: float = 0.5 if Engine.time_scale == 1.0 \
+					else (0.25 if Engine.time_scale == 0.5 else 1.0)
+			Engine.time_scale = next_scale
+			print("time_scale -> %.2f" % next_scale)
 		elif event.physical_keycode == KEY_F3:
 			# Hide the debug HUD to read the fight from the combat UI alone.
 			$DebugHUD.visible = not $DebugHUD.visible

@@ -22,6 +22,8 @@ extends Resource
 @export var gravity_mult := 1.0
 ## Scales the crater carved into terrain (architecture: terrain damage).
 @export var terrain_damage_mult := 1.0
+## Shell lifetime in seconds (S25 feel: how long a miss stays in flight).
+@export var lifetime := 8.0
 
 
 ## Effective stats for a mech: the weapon scaled by the mech's modifier.
@@ -47,4 +49,5 @@ func effective(modifier: Resource) -> Dictionary:
 		"bounciness": bounciness,
 		"gravity_mult": gravity_mult,
 		"terrain_damage_mult": terrain_damage_mult,
+		"lifetime": lifetime,
 	}

@@ -31,7 +31,6 @@ const ProjectileScript := preload("res://scripts/projectiles/projectile.gd")
 const AIDriverScript := preload("res://scripts/ai/ai_driver.gd")
 const AIDifficultyScript := preload("res://scripts/ai/ai_difficulty.gd")
 
-const CHARGE_TIME := 1.2
 ## Universal weapons (S11): the default loadout every chassis equips when its
 ## definition does not name a specific one.
 const DEFAULT_WEAPONS: Array = [WEAPON_ROCKET, WEAPON_GRENADE, WEAPON_ENERGY]
@@ -321,7 +320,7 @@ func _drive_player(mech, index: int, delta: float) -> void:
 
 	if in_move_phase:
 		if InputLayer.is_action_pressed("fire"):
-			mech.charge = minf(mech.charge + delta / CHARGE_TIME, 1.0)
+			mech.charge = minf(mech.charge + delta / Balance.config.charge_time, 1.0)
 		elif InputLayer.is_action_just_released("fire") and mech.charge > 0.0:
 			_release_fire(mech, index, mech.charge)
 
@@ -361,6 +360,7 @@ func _spawn_projectile(mech, power: float) -> void:
 		projectile.gravity_mult = stats["gravity_mult"]
 		projectile.bounces_left = stats["bounces"]
 		projectile.bounciness = stats["bounciness"]
+		projectile.max_lifetime = stats["lifetime"]
 		projectile.wind_accel = Vector3(
 				turn_manager.state.wind.x, turn_manager.state.wind.y, 0.0)
 		projectile.match_gravity = Balance.config.gravity
