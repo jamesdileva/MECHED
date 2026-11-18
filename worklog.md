@@ -68,6 +68,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `game_mode.gd`: WinCondition enum gains SURVIVE; `survive_turns` field (turns the mech must survive; highest remaining health wins at the limit, ties continue).
+- `data/modes/survive.tres` — the defensive win condition as a data mode; all three maps now support Survive (it needs no map objectives — works on any battlefield).
+- `MatchState._tick_survive` — at the survive turn boundary, iterates entity health from MatchState (0-health chassis skipped, ties continue the match).
+- `map_objective.gd` gains the objective kind vocabulary constants (KIND_CAPTURE / KIND_DESTROY / KIND_REACH) matching the roadmap's five kinds; SURVIVE is mode-level (no map region needed), ESCORT reserved for S43 (needs NPC entities).
+- Removed a test that asserted a dead chassis wins via tick_mode — in the real match flow, declare_winner fires at 0 HP via the elimination path before the SURVIVE evaluation would run; the scenario is already covered.
+
+**Verification (roadmap S32 checklist — the five kinds formalized):**
+
+- Tests **190/190 passed** — 5 new: survive mode resource exists, turn-limit evaluation by health comparison, tie continues, limit gates the evaluation, kind vocabulary constants match the roadmap. All prior suites green; import/smoke exit 0; CI green.
+- The five objective kinds now formalized: **Capture** (control zone hold), **Destroy** (structure demolition), **Reach** (ordered checkpoints), **Survive** (turn-limit health comparison — NEW), **Escort** (deferred, needs NPCs).
+
+**Next:** pause for the user's S08–S32 playtest. Roadmap continues with S28 content lock / S29 audit (playtest-driven), or S33 — Advanced Terrain. Sequencing with the user.
+
+---
+
 ## 2026-11-13 — S25 · Physics/Combat Feel Pass (tuning surface + workflow)
 
 **Scope (planned):** S25 is the feel sprint — and feel tuning is driven by playtest observations, not headless guesses. So this sprint completes the **tuning surface** and the **feel-evaluation workflow**; the numeric pass happens during the user's playtest, with final numbers applied from findings. Deliverables: (1) last feel constants moved into data — fire charge time into BalanceConfig, per-weapon shell lifetime into WeaponDefinition (explosion FX timing was already exported); (2) **F2 slow-motion debug key** (cycles time scale 1.0 → 0.5 → 0.25) — a §17 dev tool for evaluating explosions, dashes, and knockback arcs frame by frame; (3) playtest.md §12 feel-pass workflow mapping the roadmap's S25 tune-list (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera, impact effects) to the exact data file that controls each. Camera tracking/projection improvements stay S27 (separate system); impact-effect art stays S45. Roadmap note: feel tuning is deferred to the playtest by design — the S24 sandbox makes every knob reachable, and tuning without observations would be guessing.

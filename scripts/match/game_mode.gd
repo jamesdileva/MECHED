@@ -2,7 +2,7 @@ extends Resource
 ## A game mode (S31): the rule the match is won by. Objectives (where) live on
 ## the map; the mode defines how they are scored and the win condition.
 
-enum WinCondition { ELIMINATION, CONTROL, SIEGE, MOBILITY_RACE }
+enum WinCondition { ELIMINATION, CONTROL, SIEGE, MOBILITY_RACE, SURVIVE }
 
 @export var mode_name := "Elimination"
 @export var win_condition: WinCondition = WinCondition.ELIMINATION
@@ -13,3 +13,7 @@ enum WinCondition { ELIMINATION, CONTROL, SIEGE, MOBILITY_RACE }
 ## SIEGE: the defender wins when this many turns pass without the target
 ## structure collapsing; the attacker wins by collapsing it.
 @export var siege_turns := 10.0
+
+## SURVIVE: turns the mech must survive; highest remaining health wins at
+## the limit (0-health chassis lose immediately regardless of the limit).
+@export var survive_turns := 10.0

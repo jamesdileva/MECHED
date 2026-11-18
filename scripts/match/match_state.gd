@@ -244,7 +244,30 @@ func tick_mode(delta: float, entity_positions: Dictionary,
 			return _tick_race(entity_positions)
 		GameModeScript.WinCondition.SIEGE:
 			return _tick_siege(delta, entity_positions, siege_target_down)
+		GameModeScript.WinCondition.SURVIVE:
+			return _tick_survive(entity_positions)
 	return ""
+
+
+## SURVIVE (S32): when the turn limit is reached, the mech with more
+## remaining health wins; a tie continues the match past the limit.
+func _tick_survive(entity_positions: Dictionary) -> String:
+	if turn_number < int(game_mode.survive_turns):
+		return ""
+	var best_name := ""
+	var best_health := -1.0
+	for entity_name in entity_positions:
+		var hp: float = entity_health(entity_name)
+		if hp <= 0.0:
+			continue
+		if hp > best_health:
+			best_health = hp
+			best_name = entity_name
+		elif hp == best_health:
+			return ""
+	if best_health <= 0.0:
+		return ""
+	return best_name
 
 
 func _tick_control(delta: float, entity_positions: Dictionary) -> String:

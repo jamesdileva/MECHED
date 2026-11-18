@@ -74,6 +74,6 @@ structures = []
 spawn_points = PackedVector3Array(-18, 3, 0, 16, 3, 0)
 wind_max = 6.5
 objectives = [SubResource("obj_cp_a"), SubResource("obj_cp_b"), SubResource("obj_cp_c"), SubResource("obj_control_perch")]
-supported_modes = PackedStringArray("Elimination", "Control", "Mobility Race")
+supported_modes = PackedStringArray("Elimination", "Control", "Mobility Race", "Survive")
 bounds_min_x = -27.0
 bounds_max_x = 27.0
