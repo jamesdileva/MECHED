@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/match/game_mode.gd" id="1_mode"]
+
+[resource]
+script = ExtResource("1_mode")
+mode_name = "Control"
+win_condition = 1
+hold_time_to_win = 10.0
+siege_turns = 10.0

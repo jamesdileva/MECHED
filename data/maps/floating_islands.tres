@@ -2,6 +2,39 @@
 
 [ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
+[ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
+
+[sub_resource type="Resource" id="obj_control_perch"]
+script = ExtResource("5_obj")
+objective_name = "high_perch"
+kind = "control_zone"
+region = Rect2(2, 5, 3, 2)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_a"]
+script = ExtResource("5_obj")
+objective_name = "cp_island_a"
+kind = "checkpoint"
+region = Rect2(-22, 1, 9, 3)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_b"]
+script = ExtResource("5_obj")
+objective_name = "cp_island_b"
+kind = "checkpoint"
+region = Rect2(-5, 2, 9, 3)
+order = 1
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_c"]
+script = ExtResource("5_obj")
+objective_name = "cp_island_c"
+kind = "checkpoint"
+region = Rect2(12, 1, 8, 3)
+order = 2
+structure_name = ""
 
 [sub_resource type="Resource" id="op_island_a"]
 script = ExtResource("2_op")
@@ -40,5 +73,7 @@ terrain_ops = [SubResource("op_island_a"), SubResource("op_island_b"), SubResour
 structures = []
 spawn_points = PackedVector3Array(-18, 3, 0, 16, 3, 0)
 wind_max = 6.5
+objectives = [SubResource("obj_cp_a"), SubResource("obj_cp_b"), SubResource("obj_cp_c"), SubResource("obj_control_perch")]
+supported_modes = PackedStringArray("Elimination", "Control", "Mobility Race")
 bounds_min_x = -27.0
 bounds_max_x = 27.0

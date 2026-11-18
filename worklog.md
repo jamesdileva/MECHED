@@ -46,6 +46,24 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/match/game_mode.gd` — the mode rule resource (mode_name, win_condition enum ELIMINATION/CONTROL/SIEGE/MOBILITY_RACE, hold_time_to_win, siege_turns) as data in `data/modes/*.tres`.
+- `scripts/terrain/map_objective.gd` — map objectives (control_zone / checkpoint with order / siege_target bound to a structure name) as per-map data.
+- MapDefinition gains `objectives` + `supported_modes`; all three maps authored with objectives (Canyon: hilltop control, spawn→tunnel→plateau race, bridge siege; Islands: perch control, island-checkpoint race, NO siege — void is the hazard; Ruins: scaffold control, rubble→tower→wall-top race, scaffold siege).
+- MatchState: `setup_mode`/`tick_mode` — pure mode evaluation over entity positions (hold accumulation with band pause, ordered checkpoint progression, siege demolition vs turn limit with attacker=index0/defender=index1 roles); a mode lacking objectives degrades to Elimination.
+- MatchController: `camera_focus_node()`, `_tick_game_mode` per frame (siege target collapse checked via `TerrainSystem.is_structure_collapsed`), mode select screen (`mode_select.tscn` + script) filtering by the map's supported modes, MatchSession.mode_path.
+- HUD match line shows the mode name; the flow is menu → mech select → map select → **mode select** → battle.
+
+**Verification (roadmap S31 checklist — all four modes exist and load without code changes):**
+
+- Tests **184/184 passed** — 9 new: control hold accumulation/pause/return (the whole hold loop), race checkpoint progression (ordered, skip-not-counted, final gate wins), siege attacker-by-demolition + defender-by-turn-limit, maps declare supported modes (Canyon all four, Islands three with Siege unsupported, Ruins all four), mode select scene structure. All prior suites green; import/smoke exit 0 for both scenes; CI green.
+- Manual (batched): play each mode — Control on Canyon's hilltop, Siege on the bridge, Mobility Race on Islands; AI plays the same mechanics but doesn't pursue objectives (future AI work, noted).
+
+**Next:** pause for the user's S08–S31 playtest. Roadmap continues with S32 — Objective System refinement (Capture/Destroy/Escort/Survive as reusable primitives) — or S28 content lock; sequencing with the user.
+
+---
+
 ## 2026-11-13 — S25 · Physics/Combat Feel Pass (tuning surface + workflow)
 
 **Scope (planned):** S25 is the feel sprint — and feel tuning is driven by playtest observations, not headless guesses. So this sprint completes the **tuning surface** and the **feel-evaluation workflow**; the numeric pass happens during the user's playtest, with final numbers applied from findings. Deliverables: (1) last feel constants moved into data — fire charge time into BalanceConfig, per-weapon shell lifetime into WeaponDefinition (explosion FX timing was already exported); (2) **F2 slow-motion debug key** (cycles time scale 1.0 → 0.5 → 0.25) — a §17 dev tool for evaluating explosions, dashes, and knockback arcs frame by frame; (3) playtest.md §12 feel-pass workflow mapping the roadmap's S25 tune-list (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera, impact effects) to the exact data file that controls each. Camera tracking/projection improvements stay S27 (separate system); impact-effect art stays S45. Roadmap note: feel tuning is deferred to the playtest by design — the S24 sandbox makes every knob reachable, and tuning without observations would be guessing.

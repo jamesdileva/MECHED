@@ -1,4 +1,6 @@
 extends RefCounted
+
+const GameModeScript := preload("res://scripts/match/game_mode.gd")
 ## Central match state (implementation-guide §3) — pure data and queries, no
 ## scene dependencies. Reconstructable, headless-testable: the TurnManager
 ## mutates turn state, the match layer mutates health; presentation only
@@ -45,6 +47,14 @@ var wind_cap := WIND_MAX
 ## Gravity instance value (S24): Balance sets it at match setup; the AI shot
 ## solver reads it to stay in sync with real flight.
 var gravity := 30.0
+
+## S31 game mode: rule resource + per-mode runtime. Mode logic is pure over
+## entity positions (headless-testable); null mode = plain Elimination.
+var game_mode: Resource = null
+var mode_objectives: Array = []
+var hold_progress: Dictionary = {}
+var race_progress: Dictionary = {}
+var siege_survive_time := 0.0
 var rng := RandomNumberGenerator.new()
 ## Per-map wind cap (S21 wind rules); the const WIND_MAX is the default.
 var wind_max := WIND_MAX
@@ -70,6 +80,9 @@ func begin_match(names: PackedStringArray, energy_per_turn: float, turn_time: fl
 	fuel_max.clear()
 	weapon_loadouts.clear()
 	active_weapon_index.clear()
+	hold_progress.clear()
+	race_progress.clear()
+	siege_survive_time = 0.0
 	if seed >= 0:
 		rng.seed = seed
 	else:
@@ -191,3 +204,89 @@ func roll_wind() -> Vector2:
 
 func entity_health(entity_name: String) -> float:
 	return mech_health.get(entity_name, 0.0)
+
+
+## S31: wires the mode rule + the map's objectives (converted by kind).
+func setup_mode(mode: Resource, objectives: Array) -> void:
+	game_mode = mode
+	mode_objectives = objectives.duplicate(true)
+	hold_progress.clear()
+	race_progress.clear()
+	for entity_name in entity_names:
+		hold_progress[entity_name] = 0.0
+		race_progress[entity_name] = 0
+
+
+func _control_zones() -> Array:
+	return mode_objectives.filter(func(o): return o != null and o["kind"] == "control_zone")
+
+
+func _checkpoints() -> Array:
+	var out: Array = mode_objectives.filter(func(o): return o != null and o["kind"] == "checkpoint")
+	out.sort_custom(func(a, b): return a["order"] < b["order"])
+	return out
+
+
+func _in_region(pos: Vector2, region: Rect2) -> bool:
+	return pos.x >= region.position.x and pos.x <= region.end.x 			and pos.y >= region.position.y and pos.y <= region.end.y
+
+
+## S31 mode tick (pure over entity positions). Returns the winner's display
+## name when a mode win condition is met, else "".
+func tick_mode(delta: float, entity_positions: Dictionary,
+		siege_target_down: bool) -> String:
+	if game_mode == null or match_result != &"":
+		return ""
+	match int(game_mode.win_condition):
+		GameModeScript.WinCondition.CONTROL:
+			return _tick_control(delta, entity_positions)
+		GameModeScript.WinCondition.MOBILITY_RACE:
+			return _tick_race(entity_positions)
+		GameModeScript.WinCondition.SIEGE:
+			return _tick_siege(delta, entity_positions, siege_target_down)
+	return ""
+
+
+func _tick_control(delta: float, entity_positions: Dictionary) -> String:
+	var zones := _control_zones()
+	if zones.is_empty():
+		return ""
+	for entity_name in entity_positions:
+		if not hold_progress.has(entity_name):
+			hold_progress[entity_name] = 0.0
+		var pos: Vector2 = entity_positions[entity_name]
+		for zone in zones:
+			if _in_region(pos, zone["region"]):
+				hold_progress[entity_name] = hold_progress.get(entity_name, 0.0) + delta
+				if hold_progress[entity_name] >= game_mode.hold_time_to_win:
+					return entity_name
+				break
+	return ""
+
+
+func _tick_race(entity_positions: Dictionary) -> String:
+	var checkpoints := _checkpoints()
+	if checkpoints.is_empty():
+		return ""
+	for entity_name in entity_positions:
+		var progress: int = race_progress.get(entity_name, 0)
+		if progress >= checkpoints.size():
+			continue
+		var gate: Dictionary = checkpoints[progress]
+		if _in_region(entity_positions[entity_name], gate["region"]):
+			race_progress[entity_name] = progress + 1
+			if race_progress[entity_name] >= checkpoints.size():
+				return entity_name
+	return ""
+
+
+func _tick_siege(delta: float, entity_positions: Dictionary,
+		siege_target_down: bool) -> String:
+	# 1v1 roles: entity index 0 is the ATTACKER (collapse the target before
+	# the turn limit), index 1 is the DEFENDER. Turn-based pacing: the limit
+	# is counted in turns, not seconds.
+	if siege_target_down:
+		return entity_names[0] if entity_names.size() > 0 else ""
+	if turn_number > game_mode.siege_turns:
+		return entity_names[1] if entity_names.size() > 1 else ""
+	return ""

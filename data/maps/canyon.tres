@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
 [ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -70,6 +71,46 @@ structure_name = "bridge"
 region = Rect2(17, -0.5, 8, 0.5)
 anchors = PackedVector2Array(21, -0.75, 21, -2.5, 21, -3.75)
 
+[sub_resource type="Resource" id="obj_control_hilltop"]
+script = ExtResource("5_obj")
+objective_name = "hilltop"
+kind = "control_zone"
+region = Rect2(-18, 3.5, 4, 3)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_spawn"]
+script = ExtResource("5_obj")
+objective_name = "cp_spawn"
+kind = "checkpoint"
+region = Rect2(-1, 0, 2, 3)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_tunnel"]
+script = ExtResource("5_obj")
+objective_name = "cp_tunnel_west"
+kind = "checkpoint"
+region = Rect2(-21, 0, 2, 3)
+order = 1
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_plateau"]
+script = ExtResource("5_obj")
+objective_name = "cp_plateau_east"
+kind = "checkpoint"
+region = Rect2(25, 0, 2, 3)
+order = 2
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_siege_bridge"]
+script = ExtResource("5_obj")
+objective_name = "siege_bridge"
+kind = "siege_target"
+region = Rect2(17, -0.5, 8, 0.5)
+order = 0
+structure_name = "bridge"
+
 [sub_resource type="Resource" id="hazard_ravine_lava"]
 script = ExtResource("4_hazard")
 hazard_name = "ravine_lava"
@@ -83,6 +124,8 @@ display_name = "Canyon"
 terrain_ops = [SubResource("op_ground"), SubResource("op_hill_staircase"), SubResource("op_hilltop"), SubResource("op_tunnel"), SubResource("op_wall"), SubResource("op_ravine"), SubResource("op_plateau"), SubResource("op_deck"), SubResource("op_pillar")]
 structures = [SubResource("struct_bridge")]
 hazards = [SubResource("hazard_ravine_lava")]
+objectives = [SubResource("obj_control_hilltop"), SubResource("obj_cp_spawn"), SubResource("obj_cp_tunnel"), SubResource("obj_cp_plateau"), SubResource("obj_siege_bridge")]
+supported_modes = PackedStringArray("Elimination", "Control", "Siege", "Mobility Race")
 spawn_points = PackedVector3Array(0, 3, 0, 12, 7, 0)
 wind_max = 5.0
 bounds_min_x = -27.0

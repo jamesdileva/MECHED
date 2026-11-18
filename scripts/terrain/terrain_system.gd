@@ -95,6 +95,18 @@ func restore() -> void:
 	_rebuild(_all_chunk_coords())
 
 
+## S31 siege check: is the named structure fully collapsed (all anchors
+## carved)? Unknown names report as standing.
+func is_structure_collapsed(structure_name: String) -> bool:
+	for structure in structures:
+		if structure["name"] == structure_name:
+			for anchor in structure["anchors"]:
+				if grid.is_solid(anchor):
+					return false
+			return true
+	return false
+
+
 func query_surface_y(x: float) -> float:
 	return grid.query_surface_y(x)
 

@@ -8,3 +8,4 @@ const DEFAULT_MAP := "res://data/maps/canyon.tres"
 var player_chassis := DEFAULT_CHASSIS
 var ai_difficulty := "Normal"
 var map_path := DEFAULT_MAP
+var mode_path := "res://data/modes/elimination.tres"

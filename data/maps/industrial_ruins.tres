@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
 [ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
+[ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -89,6 +90,46 @@ structure_name = "scaffold"
 region = Rect2(12, 3.75, 10, 0.5)
 anchors = PackedVector2Array(14, 4, 20, 4)
 
+[sub_resource type="Resource" id="obj_control_scaffold"]
+script = ExtResource("5_obj")
+objective_name = "scaffold_deck"
+kind = "control_zone"
+region = Rect2(13, 4.25, 8, 2)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_rubble"]
+script = ExtResource("5_obj")
+objective_name = "cp_rubble"
+kind = "checkpoint"
+region = Rect2(-6, 0, 2, 3)
+order = 0
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_tower"]
+script = ExtResource("5_obj")
+objective_name = "cp_tower"
+kind = "checkpoint"
+region = Rect2(10, 3.5, 2, 2)
+order = 1
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_cp_walltop"]
+script = ExtResource("5_obj")
+objective_name = "cp_wall_top"
+kind = "checkpoint"
+region = Rect2(22, 4, 1, 2)
+order = 2
+structure_name = ""
+
+[sub_resource type="Resource" id="obj_siege_scaffold"]
+script = ExtResource("5_obj")
+objective_name = "siege_scaffold"
+kind = "siege_target"
+region = Rect2(12, 3.75, 10, 0.5)
+order = 0
+structure_name = "scaffold"
+
 [sub_resource type="Resource" id="hazard_pit_lava"]
 script = ExtResource("4_hazard")
 hazard_name = "pit_lava"
@@ -120,6 +161,8 @@ display_name = "Industrial Ruins"
 terrain_ops = [SubResource("op_ground"), SubResource("op_wall_west"), SubResource("op_wall_east"), SubResource("op_roof"), SubResource("op_rubble_a"), SubResource("op_rubble_b"), SubResource("op_broken_floor"), SubResource("op_tower"), SubResource("op_step_b"), SubResource("op_step_c"), SubResource("op_step_d"), SubResource("op_east_wall"), SubResource("op_deck")]
 structures = [SubResource("struct_scaffold")]
 hazards = [SubResource("hazard_pit_lava"), SubResource("hazard_barrel_rubble"), SubResource("hazard_barrel_tower")]
+objectives = [SubResource("obj_control_scaffold"), SubResource("obj_cp_rubble"), SubResource("obj_cp_tower"), SubResource("obj_cp_walltop"), SubResource("obj_siege_scaffold")]
+supported_modes = PackedStringArray("Elimination", "Control", "Siege", "Mobility Race")
 spawn_points = PackedVector3Array(-24, 3, 0, 24, 3, 0)
 wind_max = 5.0
 bounds_min_x = -27.0

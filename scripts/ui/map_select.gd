@@ -30,7 +30,7 @@ func _ready() -> void:
 
 func _on_map(map_path: String) -> void:
 	MatchSession.map_path = map_path
-	get_tree().change_scene_to_file(BATTLE)
+	get_tree().change_scene_to_file("res://scenes/menus/mode_select.tscn")
 
 
 func _on_back() -> void:

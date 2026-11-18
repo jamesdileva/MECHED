@@ -24,6 +24,7 @@ const PROJECTILE_SCENE := preload("res://scenes/projectiles/projectile.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/projectiles/explosion_effect.tscn")
 const BARREL_SCENE := preload("res://scenes/hazards/explosive_barrel.tscn")
 const MapHazardScript := preload("res://scripts/terrain/map_hazard.gd")
+const GameModeScript := preload("res://scripts/match/game_mode.gd")
 const WEAPON_ROCKET := preload("res://data/weapons/rocket.tres")
 const WEAPON_GRENADE := preload("res://data/weapons/grenade.tres")
 const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
@@ -85,6 +86,10 @@ func setup(p_entities: Array) -> void:
 		used[unique] = true
 		entity.display_name_override = unique
 		names.append(unique)
+	# S31 game mode: rule from MatchSession, objectives from the map.
+	turn_manager.state.game_mode = load(MatchSession.mode_path)
+	turn_manager.state.setup_mode(turn_manager.state.game_mode,
+			map_definition.objectives if map_definition != null else [])
 	# Balance sandbox (S24): match-level tuning from data/balance/balance.tres.
 	# Test-injection point (null = use the shipped defaults file).
 	var cfg: Resource = _balance_test_cfg if _balance_test_cfg != null else Balance.config
@@ -167,6 +172,7 @@ func _physics_process(delta: float) -> void:
 			_zero_intent(mech)
 		return
 	_tick_zones(delta)
+	_tick_game_mode(delta)
 	turn_manager.tick(delta)
 	var active: int = turn_manager.state.active_index
 	for i in entities.size():
@@ -189,6 +195,28 @@ func _zero_intent(mech) -> void:
 	mech.charge = 0.0
 	# The anchor is a per-turn stance: it drops when your turn ends.
 	mech.anchored = false
+
+
+## S31 game mode evaluation: entity positions feed the mode's win condition;
+## a met condition declares the winner through the normal path.
+func _tick_game_mode(delta: float) -> void:
+	var positions := {}
+	for entity in entities:
+		positions[String(entity.display_name())] = Vector2(
+				entity.position.x, entity.position.y)
+	var siege_down := false
+	if turn_manager.state.game_mode != null 			and int(turn_manager.state.game_mode.win_condition) 					== GameModeScript.WinCondition.SIEGE:
+		siege_down = _siege_target_down()
+	var winner: String = turn_manager.state.tick_mode(
+			delta, positions, siege_down)
+	if winner != "":
+		turn_manager.state.declare_winner(winner)
+
+
+func _siege_target_down() -> bool:
+	if terrain == null:
+		return false
+	return terrain.is_structure_collapsed(turn_manager.state.game_mode.siege_structure)
 
 
 ## S22 zones: neutral damage-over-time on any mech body center inside them
