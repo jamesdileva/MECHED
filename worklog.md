@@ -5,6 +5,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-13 — S25 · Physics/Combat Feel Pass (tuning surface + workflow)
+
+**Scope (planned):** S25 is the feel sprint — and feel tuning is driven by playtest observations, not headless guesses. So this sprint completes the **tuning surface** and the **feel-evaluation workflow**; the numeric pass happens during the user's playtest, with final numbers applied from findings. Deliverables: (1) last feel constants moved into data — fire charge time into BalanceConfig, per-weapon shell lifetime into WeaponDefinition (explosion FX timing was already exported); (2) **F2 slow-motion debug key** (cycles time scale 1.0 → 0.5 → 0.25) — a §17 dev tool for evaluating explosions, dashes, and knockback arcs frame by frame; (3) playtest.md §12 feel-pass workflow mapping the roadmap's S25 tune-list (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera, impact effects) to the exact data file that controls each. Camera tracking/projection improvements stay S27 (separate system); impact-effect art stays S45. Roadmap note: feel tuning is deferred to the playtest by design — the S24 sandbox makes every knob reachable, and tuning without observations would be guessing.
+
 **Done:**
 
 - BalanceConfig gained `charge_time` (fire ramp) and `shell_lifetime` (default fuse); WeaponDefinition gained per-weapon `lifetime` — both flow through effective()/spawn without code changes, completing the S25 tune-list coverage (projectile speed, gravity, explosion timing, knockback, acceleration, jetpack responsiveness, camera offsets were already data/exports).
