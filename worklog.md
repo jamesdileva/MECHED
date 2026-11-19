@@ -68,6 +68,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-19 — S35 · AI Tactical Search
+
+**Scope (planned):** per roadmap S35 — upgrade AI from heuristic selection toward shallow simulation. The S15/S16/S17 AI was a two-step pipeline (choose position → solve shot); S35 upgrades to **joint plan evaluation**: for each candidate position within the energy budget, for each weapon, for each (angle, power) candidate, simulate the flight and score the impact — **positioning score + shot tactical value − walk cost** in one number. `scripts/ai/ai_tactical.gd` (pure, headless-testable): `generate_plans(origin_y, current_x, enemy_pos, enemy_surface_y, wind, weapon_stats, terrain, structures, walk_range, angles, powers) -> Array` of plans `{move_x, weapon_slot, angle, power, impact, value, positioning}` sorted by value; `best_plan(plans) -> Dictionary`. The AI driver replaces the S15 solve + S16 choose_position two-step with a single `generate_plans` call, executes the best plan's move_x, then charges and fires. Difficulty (S18) scales the candidate lists. The joint optimization means the AI discovers combos the two-step pipeline couldn't: a position further away with a better angle + a terrain-destruction shot can outrank a closer direct hit.
+
 **Done:**
 
 - `scripts/ai/ai_tactical.gd` — pure tactical search: `generate_plans(origin_y, current_x, enemy_pos, enemy_surface_y, wind, weapon_stats, terrain, structures, walk_range, angles, powers) -> Array` of plans sorted by value (best first); each plan = {move_x, weapon_slot, angle, power, impact, value, positioning}; plan_value = shot tactical value at the simulated impact + positioning score at the move position − walk cost. The joint optimization evaluates position × weapon × angle × power combos in one pass.
