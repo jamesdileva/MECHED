@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_transformation.gd" id="1_tf"]
+
+[resource]
+script = ExtResource("1_tf")
+display_name = "Split Beam"
+base_weapon = "Energy Shot"
+speed_mult = 1.0
+damage_mult = 0.6
+blast_mult = 0.5
+knockback_mult = 0.5
+terrain_mult = 0.3
+projectile_count = 2
+spread_degrees = 6.0
+homing_strength = 0.0

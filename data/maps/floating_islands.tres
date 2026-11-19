@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/terrain/map_definition.gd" id="1_def"]
 [ext_resource type="Script" path="res://scripts/terrain/map_op.gd" id="2_op"]
 [ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
+[ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="6_struct2"]
 
 [sub_resource type="Resource" id="obj_control_perch"]
 script = ExtResource("5_obj")
@@ -35,6 +36,18 @@ kind = "checkpoint"
 region = Rect2(12, 1, 8, 3)
 order = 2
 structure_name = ""
+
+[sub_resource type="Resource" id="op_bridge_ab"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-13.5, 1.25, 9, 0.5)
+solid = true
+
+[sub_resource type="Resource" id="struct_bridge_ab"]
+script = ExtResource("6_struct2")
+structure_name = "bridge_ab"
+region = Rect2(-13.5, 1.25, 9, 0.5)
+anchors = PackedVector2Array(-11, 1.5, -6, 1.5)
 
 [sub_resource type="Resource" id="op_island_a"]
 script = ExtResource("2_op")
@@ -70,9 +83,9 @@ solid = true
 script = ExtResource("1_def")
 display_name = "Floating Islands"
 terrain_ops = [SubResource("op_island_a"), SubResource("op_island_b"), SubResource("op_island_c"), SubResource("op_perch"), SubResource("op_island_d")]
-structures = []
 spawn_points = PackedVector3Array(-18, 3, 0, 16, 3, 0)
 wind_max = 6.5
+structures = [SubResource("struct_bridge_ab")]
 objectives = [SubResource("obj_cp_a"), SubResource("obj_cp_b"), SubResource("obj_cp_c"), SubResource("obj_control_perch")]
 supported_modes = PackedStringArray("Elimination", "Control", "Mobility Race", "Survive")
 bounds_min_x = -27.0

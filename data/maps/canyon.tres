@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
 [ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
+[ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="6_struct2"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -58,6 +59,24 @@ script = ExtResource("2_op")
 kind = "rect"
 rect = Rect2(17, -0.5, 8, 0.5)
 solid = true
+
+[sub_resource type="Resource" id="op_watchtower"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(25.5, 1.5, 1.5, 2)
+solid = true
+
+[sub_resource type="Resource" id="op_cover_wall_2"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(16.5, 0, 0.5, 1.2)
+solid = true
+
+[sub_resource type="Resource" id="struct_watchtower"]
+script = ExtResource("6_struct2")
+structure_name = "watchtower"
+region = Rect2(25.5, 1.5, 1.5, 2)
+anchors = PackedVector2Array(26, 3, 26, 2)
 
 [sub_resource type="Resource" id="op_pillar"]
 script = ExtResource("2_op")
@@ -121,8 +140,8 @@ damage_per_second = 15.0
 [resource]
 script = ExtResource("1_def")
 display_name = "Canyon"
-terrain_ops = [SubResource("op_ground"), SubResource("op_hill_staircase"), SubResource("op_hilltop"), SubResource("op_tunnel"), SubResource("op_wall"), SubResource("op_ravine"), SubResource("op_plateau"), SubResource("op_deck"), SubResource("op_pillar")]
-structures = [SubResource("struct_bridge")]
+terrain_ops = [SubResource("op_ground"), SubResource("op_hill_staircase"), SubResource("op_hilltop"), SubResource("op_tunnel"), SubResource("op_wall"), SubResource("op_ravine"), SubResource("op_plateau"), SubResource("op_watchtower"), SubResource("op_cover_wall_2"), SubResource("op_deck"), SubResource("op_pillar")]
+structures = [SubResource("struct_bridge"), SubResource("struct_watchtower")]
 hazards = [SubResource("hazard_ravine_lava")]
 objectives = [SubResource("obj_control_hilltop"), SubResource("obj_cp_spawn"), SubResource("obj_cp_tunnel"), SubResource("obj_cp_plateau"), SubResource("obj_siege_bridge")]
 supported_modes = PackedStringArray("Elimination", "Control", "Siege", "Survive", "Mobility Race")

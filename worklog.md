@@ -68,6 +68,21 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- Six new transformation resources in `data/weapons/transformations/`: **Bunker Buster** (Bastion Grenade: ×1.5 terrain, ×1.3 damage, ×0.75 speed — demolition shell), **Cluster Grenade** (Strider: 3 submunitions @12°, ×0.4 damage each — area denial), **Aerial Mine** (Wraith Grenade: ×0.8 damage, ×0.3 terrain — a light trap), **Heavy Lance** (Bastion Energy Shot: ×1.4 damage, ×0.6 speed, ×1.3 knockback — a slow cannon), **Split Beam** (Strider Energy Shot: 2 submunitions @6°, ×0.6 damage each), **Piercing Shot** (Wraith Energy Shot: ×1.5 speed, ×0.7 damage, ×0.1 terrain — a fast flat sniper).
+- Per-chassis modifier files wired: Bastion [Siege Rocket, Bunker Buster, Heavy Lance], Strider [Split Rocket, Cluster Grenade, Split Beam], Wraith [Guided Rocket, Aerial Mine, Piercing Shot]. Each chassis now transforms all three base weapons = 9 distinct behaviors.
+- No code changes: the transformation system (S12) and the generic ability loop (S23) already handle everything — the new behaviors are pure data.
+
+**Verification (roadmap S34 checklist — the system produces many combinations from few base weapons):**
+
+- Tests **199/199 passed** — 9 new: all nine transformations resolve per chassis, each has a distinct tactical identity (Bunker Buster digs, Cluster spreads, Piercing flies fast and flat, Heavy Lance pushes harder, Aerial Mine is light, Split Beam doubles), chassis modifiers resolve all three base weapons end-to-end, and the AI solver consumes transformed stats. All prior suites green; import/smoke exit 0; CI green.
+- Manual (batched): fire each weapon as each chassis — 9 distinct behaviors to feel.
+
+**Next:** pause for the user's S08–S34 playtest. Roadmap continues with S35 — AI Tactical Search (shallow forward simulation) — or S36 — AI Personality. Both are code/system sprints that don't need a playtest; sequencing with the user.
+
+---
+
 ## 2026-11-19 — S33 · Advanced Terrain
 
 **Scope (planned):** per roadmap S33 — richer tactical environments on all three maps, authored as data (no code changes — the existing systems handle everything). Per map: (1) **Canyon** gains a **watchtower** on the east plateau (collapsible structure: shell the base, drop whoever's on top) and a **second cover wall** near the ravine edge; (2) **Floating Islands** gains a **narrow bridge** between islands A and B (collapsible — shell it to strand ground mechs on one side) plus a small high **sniper perch** on island C; (3) **Industrial Ruins** gains a **destructible building** (two walls + roof — the roof is a collapsible structure with its own anchors, so shelling the walls drops the roof on anyone inside) and a **second rubble mound** for cover. Every new structure uses the existing anchor-collapse system (S13/S21); no code changes needed. Tests verify the new structures exist, collapse correctly under their anchors, and the maps stay consistent after stress.

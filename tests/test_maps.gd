@@ -27,22 +27,27 @@ func test_all_three_maps_load_and_build() -> void:
 		assert_true(g != null, "%s builds onto a grid" % path.get_file())
 
 
-func test_canyon_matches_the_s13_baseline_exactly() -> void:
-	# The S13 hardcoded layout authored as map data: the two masks must be
-	# identical so the playtest baseline is unchanged.
-	var from_layout = load(GRID).new()
-	from_layout.create(240, 48, 0.25, -30.0, 8.0)
-	load(LAYOUT).build_standard_layout(from_layout)
-	var from_data = _built(CANYON)
-	assert_equal(from_data.cells, from_layout.cells,
-			"Canyon ops reproduce the S13 layout byte-for-byte")
-	assert_equal(from_data.width, from_layout.width, "grid width matches")
+func test_canyon_retains_key_s13_features() -> void:
+	# The S13 baseline test served its purpose (proving the ops matched the
+	# hardcoded layout). S33 deliberately extends the battlefield, so the
+	# test now asserts the key tactical features instead of byte-equality.
+	var g = _built(CANYON)
+	assert_true(g.is_solid_world(Vector2(0, -0.5)), "ground slab stands")
+	assert_true(g.is_solid_world(Vector2(-19, 3.5)), "hilltop stands")
+	assert_true(not g.is_solid_world(Vector2(-19, 1.0)), "tunnel is open")
+	assert_true(g.is_solid_world(Vector2(21, -0.25)), "bridge deck crosses the ravine")
+	assert_true(not g.is_solid_world(Vector2(19, -1.0)), "ravine is open")
+	assert_true(g.is_solid_world(Vector2(26, 3.5)), "watchtower stands on the plateau")
 
 
 func test_canyon_has_the_bridge_structure() -> void:
 	var structures: Array = load(CANYON).build(_built(CANYON)).duplicate()
-	assert_equal(structures.size(), 1, "Canyon ships the collapsible bridge")
-	assert_equal(structures[0]["name"], "bridge", "the structure is the bridge")
+	assert_equal(structures.size(), 2, "Canyon ships two collapsible structures")
+	var names: Array = []
+	for s in structures:
+		names.append(s["name"])
+	assert_true("bridge" in names, "the bridge is present")
+	assert_true("watchtower" in names, "the watchtower is present")
 
 
 func test_floating_islands_have_no_ground() -> void:
@@ -66,8 +71,12 @@ func test_industrial_ruins_have_the_scaffold() -> void:
 	# The scaffold deck spans tower to wall, 4m up.
 	assert_true(g.is_solid_world(Vector2(18, 4.0)), "scaffold deck stands")
 	var structures: Array = load(RUINS).build(g)
-	assert_true(structures.size() == 1 and structures[0]["name"] == "scaffold",
-			"the scaffold is a collapsible structure")
+	assert_equal(structures.size(), 2, "Ruins ships two collapsible structures")
+	var names: Array = []
+	for s in structures:
+		names.append(s["name"])
+	assert_true("scaffold" in names, "the scaffold is present")
+	assert_true("building_roof" in names, "the building roof is present")
 
 
 func test_maps_define_two_spawns_above_their_terrain() -> void:

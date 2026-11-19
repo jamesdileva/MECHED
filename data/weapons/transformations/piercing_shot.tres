@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_transformation.gd" id="1_tf"]
+
+[resource]
+script = ExtResource("1_tf")
+display_name = "Piercing Shot"
+base_weapon = "Energy Shot"
+speed_mult = 1.5
+damage_mult = 0.7
+blast_mult = 0.4
+knockback_mult = 0.3
+terrain_mult = 0.1
+projectile_count = 1
+spread_degrees = 0.0
+homing_strength = 0.0

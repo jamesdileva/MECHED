@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_modifier.gd" id="1_mod"]
 [ext_resource type="Resource" path="res://data/weapons/transformations/guided_rocket.tres" id="2_guided"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/aerial_mine.tres" id="3_mine"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/piercing_shot.tres" id="4_pierce"]
 
 [resource]
 script = ExtResource("1_mod")
@@ -9,4 +11,4 @@ display_name = "Wraith Weapons"
 speed_mult = 1.0
 damage_mult = 1.0
 knockback_mult = 1.0
-transformations = [ExtResource("2_guided")]
+transformations = [ExtResource("2_guided"), ExtResource("3_mine"), ExtResource("4_pierce")]

@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_modifier.gd" id="1_mod"]
 [ext_resource type="Resource" path="res://data/weapons/transformations/split_rocket.tres" id="2_split"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/cluster_grenade.tres" id="3_cluster"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/split_beam.tres" id="4_beam"]
 
 [resource]
 script = ExtResource("1_mod")
@@ -9,4 +11,4 @@ display_name = "Strider Weapons"
 speed_mult = 1.0
 damage_mult = 1.0
 knockback_mult = 1.0
-transformations = [ExtResource("2_split")]
+transformations = [ExtResource("2_split"), ExtResource("3_cluster"), ExtResource("4_beam")]

@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_modifier.gd" id="1_mod"]
 [ext_resource type="Resource" path="res://data/weapons/transformations/siege_rocket.tres" id="2_siege"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/bunker_buster.tres" id="3_bunker"]
+[ext_resource type="Resource" path="res://data/weapons/transformations/heavy_lance.tres" id="4_lance"]
 
 [resource]
 script = ExtResource("1_mod")
@@ -9,4 +11,4 @@ display_name = "Bastion Weapons"
 speed_mult = 1.0
 damage_mult = 1.0
 knockback_mult = 1.0
-transformations = [ExtResource("2_siege")]
+transformations = [ExtResource("2_siege"), ExtResource("3_bunker"), ExtResource("4_lance")]

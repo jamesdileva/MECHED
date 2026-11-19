@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="3_struct"]
 [ext_resource type="Script" path="res://scripts/terrain/map_hazard.gd" id="4_hazard"]
 [ext_resource type="Script" path="res://scripts/terrain/map_objective.gd" id="5_obj"]
+[ext_resource type="Script" path="res://scripts/terrain/map_structure.gd" id="6_struct2"]
 
 [sub_resource type="Resource" id="op_ground"]
 script = ExtResource("2_op")
@@ -130,6 +131,36 @@ region = Rect2(12, 3.75, 10, 0.5)
 order = 0
 structure_name = "scaffold"
 
+[sub_resource type="Resource" id="op_building_wall_w"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-25, 0, 0.5, 2.5)
+solid = true
+
+[sub_resource type="Resource" id="op_building_wall_e"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-21.5, 0, 0.5, 2.5)
+solid = true
+
+[sub_resource type="Resource" id="op_building_roof"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-25, 2, 4, 0.5)
+solid = true
+
+[sub_resource type="Resource" id="op_rubble_c"]
+script = ExtResource("2_op")
+kind = "rect"
+rect = Rect2(-12, 0, 1.5, 1.5)
+solid = true
+
+[sub_resource type="Resource" id="struct_building_roof"]
+script = ExtResource("6_struct2")
+structure_name = "building_roof"
+region = Rect2(-25, 2, 4, 0.5)
+anchors = PackedVector2Array(-24.75, 0.25, -22.25, 0.25)
+
 [sub_resource type="Resource" id="hazard_pit_lava"]
 script = ExtResource("4_hazard")
 hazard_name = "pit_lava"
@@ -158,8 +189,8 @@ knockback_force = 12.0
 [resource]
 script = ExtResource("1_def")
 display_name = "Industrial Ruins"
-terrain_ops = [SubResource("op_ground"), SubResource("op_wall_west"), SubResource("op_wall_east"), SubResource("op_roof"), SubResource("op_rubble_a"), SubResource("op_rubble_b"), SubResource("op_broken_floor"), SubResource("op_tower"), SubResource("op_step_b"), SubResource("op_step_c"), SubResource("op_step_d"), SubResource("op_east_wall"), SubResource("op_deck")]
-structures = [SubResource("struct_scaffold")]
+terrain_ops = [SubResource("op_ground"), SubResource("op_wall_west"), SubResource("op_wall_east"), SubResource("op_roof"), SubResource("op_rubble_a"), SubResource("op_rubble_b"), SubResource("op_broken_floor"), SubResource("op_tower"), SubResource("op_step_b"), SubResource("op_step_c"), SubResource("op_step_d"), SubResource("op_east_wall"), SubResource("op_deck"), SubResource("op_building_wall_w"), SubResource("op_building_wall_e"), SubResource("op_building_roof"), SubResource("op_rubble_c")]
+structures = [SubResource("struct_scaffold"), SubResource("struct_building_roof")]
 hazards = [SubResource("hazard_pit_lava"), SubResource("hazard_barrel_rubble"), SubResource("hazard_barrel_tower")]
 objectives = [SubResource("obj_control_scaffold"), SubResource("obj_cp_rubble"), SubResource("obj_cp_tower"), SubResource("obj_cp_walltop"), SubResource("obj_siege_scaffold")]
 supported_modes = PackedStringArray("Elimination", "Control", "Siege", "Survive", "Mobility Race")
