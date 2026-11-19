@@ -68,6 +68,20 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/ai/ai_tactical.gd` — pure tactical search: `generate_plans(origin_y, current_x, enemy_pos, enemy_surface_y, wind, weapon_stats, terrain, structures, walk_range, angles, powers) -> Array` of plans sorted by value (best first); each plan = {move_x, weapon_slot, angle, power, impact, value, positioning}; plan_value = shot tactical value at the simulated impact + positioning score at the move position − walk cost. The joint optimization evaluates position × weapon × angle × power combos in one pass.
+- Fixed during verification: an indentation break in `generate_plans`'s inner loop (the `simulate_flight` call lost its tab level) — parse guard caught it before it could ship.
+
+**Verification (roadmap S35 checklist — shallow simulation, not ML):**
+
+- Tests **206/206 passed** — 7 new tactical-search tests: plan generation produces many candidates, plans sorted by value descending, best_plan returns the first, joint optimization finds terrain shots from distance on Canyon, walk cost prefers closer positions (at equal quality), walk range respected, empty plans return a default. All prior suites green; import/smoke exit 0 for both scenes; CI green.
+- Manual (batched): watch the AI pick positions AND shots jointly — it should sometimes stand further back for a better angle, or reposition to a spot where a terrain-destruction shot is worth more than a direct hit.
+
+**Next:** pause for the user's S08–S35 playtest. Roadmap continues with S36 — AI Personality (behavioral profiles) — or S37 — Match Replay; sequencing with the user.
+
+---
+
 ## 2026-11-19 — S34 · Advanced Weapon Transformations
 
 **Scope (planned):** per roadmap S34 — expand the weapon/mech interaction beyond the S12 Rocket transformations. New per-chassis transformations for **Grenade** and **Energy Shot**, authored as data on the existing S12 transformation system (no code changes to the transformation pipeline): **Grenade** — Bastion → **Bunker Buster** (×1.5 terrain carve, ×1.3 blast, ×0.75 speed: a slow demolition shell that reshapes cover), Strider → **Cluster Grenade** (3 submunitions at 12° spread, ×0.4 damage each: area denial), Wraith → **Aerial Mine** (bounces 3 times before detonating, ×0.8 damage: a trap that lingers); **Energy Shot** — Bastion → **Heavy Lance** (×1.4 damage, ×0.6 speed: a slow piercing cannon), Strider → **Split Beam** (2 submunitions at 6° spread, ×0.6 damage each), Wraith → **Piercing Shot** (×0.7 damage, ×1.5 speed, ×0.5 gravity: a fast flat anti-air shot). Each chassis now has 3 weapon × 3 transformation combinations = 9 distinct behaviors per match. Tests verify each transformation's stats and that the per-chassis modifier lookup resolves all three weapons.
