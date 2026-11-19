@@ -68,6 +68,10 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+## 2026-11-19 — S34 · Advanced Weapon Transformations
+
+**Scope (planned):** per roadmap S34 — expand the weapon/mech interaction beyond the S12 Rocket transformations. New per-chassis transformations for **Grenade** and **Energy Shot**, authored as data on the existing S12 transformation system (no code changes to the transformation pipeline): **Grenade** — Bastion → **Bunker Buster** (×1.5 terrain carve, ×1.3 blast, ×0.75 speed: a slow demolition shell that reshapes cover), Strider → **Cluster Grenade** (3 submunitions at 12° spread, ×0.4 damage each: area denial), Wraith → **Aerial Mine** (bounces 3 times before detonating, ×0.8 damage: a trap that lingers); **Energy Shot** — Bastion → **Heavy Lance** (×1.4 damage, ×0.6 speed: a slow piercing cannon), Strider → **Split Beam** (2 submunitions at 6° spread, ×0.6 damage each), Wraith → **Piercing Shot** (×0.7 damage, ×1.5 speed, ×0.5 gravity: a fast flat anti-air shot). Each chassis now has 3 weapon × 3 transformation combinations = 9 distinct behaviors per match. Tests verify each transformation's stats and that the per-chassis modifier lookup resolves all three weapons.
+
 **Done:**
 
 - Six new transformation resources in `data/weapons/transformations/`: **Bunker Buster** (Bastion Grenade: ×1.5 terrain, ×1.3 damage, ×0.75 speed — demolition shell), **Cluster Grenade** (Strider: 3 submunitions @12°, ×0.4 damage each — area denial), **Aerial Mine** (Wraith Grenade: ×0.8 damage, ×0.3 terrain — a light trap), **Heavy Lance** (Bastion Energy Shot: ×1.4 damage, ×0.6 speed, ×1.3 knockback — a slow cannon), **Split Beam** (Strider Energy Shot: 2 submunitions @6°, ×0.6 damage each), **Piercing Shot** (Wraith Energy Shot: ×1.5 speed, ×0.7 damage, ×0.1 terrain — a fast flat sniper).
