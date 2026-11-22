@@ -39,16 +39,16 @@ func test_bridge_collapse_shot_outranks_direct_hit() -> void:
 	var enemy_pos := Vector3(21, 0.775, 0)
 	var enemy_surface: float = arena["grid"].query_surface_y(21)
 	var direct_on_bridge: float = driver.shot_value(Vector3(21, 0.5, 0), stats,
-			enemy_pos, enemy_surface, arena["grid"], arena["structures"])
+			enemy_pos, enemy_surface, arena["grid"], arena["structures"])["total"]
 	var pillar_only: float = driver.shot_value(Vector3(21, -2.25, 0), stats,
-			enemy_pos, enemy_surface, arena["grid"], arena["structures"])
+			enemy_pos, enemy_surface, arena["grid"], arena["structures"])["total"]
 	assert_almost_equal(direct_on_bridge, 12.0, 0.1,
 			"direct hit on the bridge stacks damage + footing + collapse")
 	assert_almost_equal(pillar_only, 8.0, 0.1, "pillar shot = footing + collapse, no damage")
 	var flat_grid = load(GRID).new()
 	load(LAYOUT).fill_world_rect(flat_grid, Rect2(-30, -4, 60, 4), true)
 	var plain_direct: float = driver.shot_value(Vector3(0, 0.5, 0), stats,
-			Vector3(0, 0.875, 0), 0.0, flat_grid, [])
+			Vector3(0, 0.875, 0), 0.0, flat_grid, [])["total"]
 	assert_almost_equal(plain_direct, 7.0, 0.1, "a plain direct hit = damage + footing only")
 	assert_true(pillar_only > plain_direct,
 			"collapsing the bridge beats a plain 40-damage hit (8.0 > 7.0)")
@@ -66,9 +66,9 @@ func test_shove_shot_beats_out_of_range_direct() -> void:
 	var enemy_pos := Vector3(24.5, 1.5, 0)
 	var enemy_surface: float = arena["grid"].query_surface_y(24.5)
 	var shove: float = driver.shot_value(Vector3(28, 1.5, 0), stats, enemy_pos,
-			enemy_surface, arena["grid"], arena["structures"])
+			enemy_surface, arena["grid"], arena["structures"])["total"]
 	var harmless: float = driver.shot_value(Vector3(24.5, 5.0, 0), stats, enemy_pos,
-			enemy_surface, arena["grid"], arena["structures"])
+			enemy_surface, arena["grid"], arena["structures"])["total"]
 	assert_almost_equal(shove, 3.0, 0.1, "the behind-blast is valued as a shove-off")
 	assert_almost_equal(harmless, 0.0, EPS, "same range, wrong side: no shove credit")
 	assert_true(shove > harmless,
@@ -83,7 +83,7 @@ func test_footing_carve_stacks_with_direct_damage() -> void:
 	var enemy_surface: float = arena["grid"].query_surface_y(0)
 	# A shell landing on their feet deals damage AND undermines the footing.
 	var combined: float = driver.shot_value(Vector3(0.3, 0.3, 0), stats, enemy_pos,
-			enemy_surface, arena["grid"], arena["structures"])
+			enemy_surface, arena["grid"], arena["structures"])["total"]
 	assert_true(combined > 4.0,
 			"direct damage + footing destruction stack (%.2f)" % combined)
 
@@ -99,9 +99,9 @@ func test_open_field_prefers_the_direct_hit() -> void:
 	var enemy_pos := Vector3(8, 0.875, 0)
 	var enemy_surface: float = g.query_surface_y(8)
 	var direct: float = driver.shot_value(Vector3(8, 1.2, 0), stats, enemy_pos,
-			enemy_surface, g, [])
+			enemy_surface, g, [])["total"]
 	var anywhere_else: float = driver.shot_value(Vector3(-6, 0.5, 0), stats, enemy_pos,
-			enemy_surface, g, [])
+			enemy_surface, g, [])["total"]
 	assert_true(direct > anywhere_else,
 			"in the open the AI just shoots you (%.2f > %.2f)" % [direct, anywhere_else])
 

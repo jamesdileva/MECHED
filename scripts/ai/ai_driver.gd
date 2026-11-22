@@ -42,6 +42,8 @@ var move_target_x := NAN
 ## Difficulty profile (S18) — set by the match layer; empty falls back to
 ## Normal.
 var difficulty: Dictionary = {}
+## Personality weights (S36): set by the match layer from MatchSession.
+var personality: Dictionary = {}
 ## Set when the driver wants the match layer to release a shot at this power;
 ## consumed (and reset to -1) by the match layer — the driver stays decoupled
 ## from projectile spawning.
@@ -120,7 +122,8 @@ func _move_phase(mech, target, state, tm, terrain, delta: float) -> void:
 			plan = solve_shot(mech.global_position + Vector3(0, 1.0, 0),
 					target.global_position, signf(to_target), state.wind,
 					_loadout_stats(mech, state), enemy_surface_y, value_terrain,
-					structures, prof["angles"], prof["powers"], state.gravity)
+					structures, prof["angles"], prof["powers"], state.gravity,
+				personality)
 			if plan.has("slot"):
 				state.set_active_weapon(String(mech.display_name()), plan["slot"])
 			# Imperfect targeting (S18): noise draws from the per-match seeded
@@ -155,23 +158,22 @@ func _fire_phase(mech, state, delta: float) -> void:
 		phase = "done"
 
 
-## Tactical value of a shell landing at impact_pos (S17): direct damage,
-## footing destruction under the enemy, collapsible-structure collapse, and
-## edge shove-off. Pure — headless-testable. This is what makes the AI shoot
-## the bridge pillar instead of the mech standing on it.
+## Tactical value breakdown of a shell landing at impact_pos (S17/S36):
+## direct damage, footing destruction, structure collapse, edge shove-off —
+## returned as components so personalities can weight them independently.
+## Pure — headless-testable.
 static func shot_value(impact_pos: Vector3, stats: Dictionary, enemy_pos: Vector3,
-		enemy_surface_y: float, terrain, structures: Array) -> float:
+		enemy_surface_y: float, terrain, structures: Array) -> Dictionary:
 	var dist: float = impact_pos.distance_to(enemy_pos)
 	var radius: float = stats["explosion_radius"]
-	var value: float = Ballistics.damage_falloff(dist, radius,
+	var direct: float = Ballistics.damage_falloff(dist, radius,
 			stats["damage_max"], stats["direct_hit_radius"]) * DIRECT_DAMAGE_SCALE
-	# Footing destruction: a crater under the enemy's feet drops them.
+	var footing := 0.0
 	if not is_nan(enemy_surface_y) \
 			and impact_pos.distance_to(Vector3(enemy_pos.x, enemy_surface_y, 0.0)) \
 					<= radius * 1.2:
-		value += FOOTING_VALUE
-	# Structure collapse: the enemy stands on a collapsible region and the
-	# blast reaches its anchors (the bridge pillar under their feet).
+		footing = FOOTING_VALUE
+	var collapse := 0.0
 	var grid = terrain.grid if terrain != null and "grid" in terrain else terrain
 	if grid != null and "cell_center" in grid:
 		for structure in structures:
@@ -184,23 +186,34 @@ static func shot_value(impact_pos: Vector3, stats: Dictionary, enemy_pos: Vector
 			var anchor_cell: Vector2 = grid.cell_center(anchor.x, anchor.y)
 			var anchor_pos: Vector3 = Vector3(anchor_cell.x, anchor_cell.y, 0.0)
 			if impact_pos.distance_to(anchor_pos) <= radius + 1.0:
-				value += COLLAPSE_VALUE
-	# Shove-off: the enemy stands near a live drop and the blast lands on the
-	# side AWAY from the edge — knockback pushes them off. A blast between
-	# the enemy and the edge pushes them to safety, which earns nothing.
+				collapse = COLLAPSE_VALUE
+	var shove := 0.0
 	if terrain != null and Positioning.edge_risk(enemy_pos.x, enemy_surface_y, terrain) > 0.0:
 		if dist <= stats.get("knockback_radius", 5.0):
 			var enemy_surface: float = enemy_surface_y if not is_nan(enemy_surface_y) \
 					else enemy_pos.y
 			var drop_right: bool = _is_drop(terrain, enemy_pos.x + 2.0, enemy_surface)
 			var drop_left: bool = _is_drop(terrain, enemy_pos.x - 2.0, enemy_surface)
-			# Knockback pushes the target AWAY from the blast: to shove them
-			# into a drop on one side, the blast must land on the OPPOSITE side.
 			if drop_right and impact_pos.x < enemy_pos.x - 0.5:
-				value += SHOVE_VALUE
+				shove = SHOVE_VALUE
 			elif drop_left and impact_pos.x > enemy_pos.x + 0.5:
-				value += SHOVE_VALUE
-	return value
+				shove = SHOVE_VALUE
+	return {
+		"direct": direct,
+		"footing": footing,
+		"collapse": collapse,
+		"shove": shove,
+		"total": direct + footing + collapse + shove,
+	}
+
+
+## Weighted total from a breakdown + personality weights. Weights default to
+## 1.0 (Balanced).
+static func weighted_shot_value(breakdown: Dictionary, weights: Dictionary) -> float:
+	return breakdown["direct"] * weights.get("shot_weight", 1.0) \
+			+ breakdown["footing"] * weights.get("terrain_weight", 1.0) \
+			+ breakdown["collapse"] * weights.get("terrain_weight", 1.0) \
+			+ breakdown["shove"] * weights.get("knockback_weight", 1.0)
 
 
 ## Is the column at world x a drop relative to surface_y (carved through, or
@@ -217,7 +230,8 @@ static func _is_drop(terrain, x: float, surface_y: float) -> bool:
 static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 		wind: Vector2, weapon_stats: Array, enemy_surface_y := NAN,
 		terrain = null, structures: Array = [], angles: Array = SOLVE_ANGLES,
-		powers: Array = SOLVE_POWERS, gravity := Ballistics.MATCH_GRAVITY) -> Dictionary:
+		powers: Array = SOLVE_POWERS, gravity := Ballistics.MATCH_GRAVITY,
+		weights := {}) -> Dictionary:
 	var best := {"value": -INF, "miss": INF, "slot": -1, "angle": 45.0, "power": 1.0}
 	for entry in weapon_stats:
 		var stats: Dictionary = entry["stats"]
@@ -229,8 +243,9 @@ static func solve_shot(origin: Vector3, target_pos: Vector3, dir_sign: float,
 						origin, vel, wind, 1.0 / 60.0, 0.0, 30.0, gravity)
 				var impact: Vector3 = result["position"]
 				var miss: float = impact.distance_to(target_pos)
-				var value: float = shot_value(impact, stats, target_pos,
+				var breakdown: Dictionary = shot_value(impact, stats, target_pos,
 						enemy_surface_y, terrain, structures)
+				var value: float = weighted_shot_value(breakdown, weights)
 				if value > best["value"] + 0.001 \
 						or (absf(value - best["value"]) <= 0.001 and miss < best["miss"]):
 					best = {"value": value, "miss": miss, "slot": entry["slot"],

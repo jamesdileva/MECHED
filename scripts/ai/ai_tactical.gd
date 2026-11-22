@@ -22,11 +22,12 @@ const CANDIDATE_STEP := 2.0
 ## score at the move position − walk cost from the current position.
 static func plan_value(impact_pos: Vector3, move_x: float, current_x: float,
 		enemy_pos: Vector3, enemy_surface_y: float, terrain, structures: Array) -> float:
-	var shot := AIDriver.shot_value(impact_pos, {
+	var breakdown: Dictionary = AIDriver.shot_value(impact_pos, {
 		"damage_max": 40.0, "explosion_radius": 2.5,
 		"direct_hit_radius": 0.75, "knockback_force": 14.0,
 		"knockback_radius": 5.0,
 	}, enemy_pos, enemy_surface_y, terrain, structures)
+	var shot: float = breakdown["total"]
 	var position_score: float = Positioning.score_position(
 			move_x, enemy_surface_y, enemy_pos, terrain)
 	var walk_cost: float = MOVE_COST_PER_M * absf(move_x - current_x)
@@ -42,7 +43,8 @@ static func plan_value(impact_pos: Vector3, move_x: float, current_x: float,
 ## surface height it currently stands on).
 static func generate_plans(origin_y: float, current_x: float, enemy_pos: Vector3,
 		enemy_surface_y: float, wind: Vector2, weapon_stats: Array, terrain,
-		structures: Array, walk_range: float, angles: Array, powers: Array) -> Array:
+		structures: Array, walk_range: float, angles: Array, powers: Array,
+		weights := {}) -> Array:
 	var plans: Array = []
 	var lo: float = maxf(current_x - walk_range, -27.0)
 	var hi: float = minf(current_x + walk_range, 27.0)
@@ -63,8 +65,9 @@ static func generate_plans(origin_y: float, current_x: float, enemy_pos: Vector3
 					var result: Dictionary = Ballistics.simulate_flight(
 							move_origin, vel, wind, 1.0 / 60.0, 0.0, 30.0)
 					var impact: Vector3 = result["position"]
-					var shot: float = AIDriver.shot_value(impact, stats,
+					var breakdown: Dictionary = AIDriver.shot_value(impact, stats,
 							enemy_pos, enemy_surface_y, terrain, structures)
+					var shot: float = AIDriver.weighted_shot_value(breakdown, weights)
 					var value: float = shot + positioning - walk_cost
 					plans.append({
 						"move_x": move_x,

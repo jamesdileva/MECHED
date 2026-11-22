@@ -68,6 +68,23 @@ Each entry: date, sprint, scope, what was built, verification results, known iss
 
 ---
 
+**Done:**
+
+- `scripts/ai/ai_personality.gd` — the personality resource: six presets (Balanced / Aggressive / Defensive / Mobility / Siege / Opportunist) as weight dictionaries applied to the tactical search's scoring components. Unknown names fall back to Balanced.
+- `ai_driver.shot_value` refactored to return a **component breakdown** ({direct, footing, collapse, shove, total}) instead of a single float — personalities weight the parts independently via `weighted_shot_value(breakdown, weights)`.
+- `ai_tactical.generate_plans` gains a `weights` param (passed through to `weighted_shot_value`); the plan value now weights direct damage, footing, collapse, and shove-off independently.
+- MatchSession gains `ai_personality` (default "Opportunist"); MatchController wires it to the AI driver at setup.
+- Fixed during verification: all `shot_value` callers updated for the breakdown dict return type.
+
+**Verification (roadmap S36 checklist — variety without different codebases):**
+
+- Tests **206/206 passed** — all prior suites green (the breakdown refactor preserved every existing behavioral test); import/smoke exit 0; CI green.
+- Manual (batched): personality differences are observable in AI behavior — Aggressive closes distance and fires more, Siege targets terrain, Opportunist takes shove-off shots. The personality is set from mode select alongside difficulty.
+
+**Next:** the AI arc (S15–S18 + S35–S36) is complete: tactical search, personality, difficulty. Roadmap continues with S37 — Match Replay (record/replay) — or S38 — Spectator Mode. Both are system features; sequencing with the user.
+
+---
+
 ## 2026-11-19 — S35 · AI Tactical Search
 
 **Scope (planned):** per roadmap S35 — upgrade AI from heuristic selection toward shallow simulation. The S15/S16/S17 AI was a two-step pipeline (choose position → solve shot); S35 upgrades to **joint plan evaluation**: for each candidate position within the energy budget, for each weapon, for each (angle, power) candidate, simulate the flight and score the impact — **positioning score + shot tactical value − walk cost** in one number. `scripts/ai/ai_tactical.gd` (pure, headless-testable): `generate_plans(origin_y, current_x, enemy_pos, enemy_surface_y, wind, weapon_stats, terrain, structures, walk_range, angles, powers) -> Array` of plans `{move_x, weapon_slot, angle, power, impact, value, positioning}` sorted by value; `best_plan(plans) -> Dictionary`. The AI driver replaces the S15 solve + S16 choose_position two-step with a single `generate_plans` call, executes the best plan's move_x, then charges and fires. Difficulty (S18) scales the candidate lists. The joint optimization means the AI discovers combos the two-step pipeline couldn't: a position further away with a better angle + a terrain-destruction shot can outrank a closer direct hit.

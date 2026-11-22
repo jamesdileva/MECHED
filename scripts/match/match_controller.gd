@@ -31,6 +31,7 @@ const WEAPON_ENERGY := preload("res://data/weapons/energy_shot.tres")
 const ProjectileScript := preload("res://scripts/projectiles/projectile.gd")
 const AIDriverScript := preload("res://scripts/ai/ai_driver.gd")
 const AIDifficultyScript := preload("res://scripts/ai/ai_difficulty.gd")
+const AIPersonalityScript := preload("res://scripts/ai/ai_personality.gd")
 
 ## Universal weapons (S11): the default loadout every chassis equips when its
 ## definition does not name a specific one.
@@ -240,6 +241,7 @@ func _drive_ai(mech, index: int, delta: float) -> void:
 	if _ai == null:
 		_ai = AIDriverScript.new()
 		_ai.difficulty = AIDifficultyScript.profile_for(ai_difficulty)
+		_ai.personality = AIPersonalityScript.profile_for(MatchSession.ai_personality)
 	var enemies: Array = entities.filter(func(e): return e != mech)
 	_ai.update(mech, enemies, turn_manager.state, turn_manager, terrain, delta)
 
